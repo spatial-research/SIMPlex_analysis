@@ -1,0 +1,29 @@
+# Heavy data — R objects, SpaceRanger/CellRanger outputs, FASTQs, Xenium zarrs,
+# external references, generated figures. Lives inside the repository directory
+# for self-containment but is NOT git-tracked. See config.R (`DATA_ROOT`).
+#
+# (Small git-tracked metadata lives in `resources/` instead.)
+data/
+!data/.gitkeep
+!data/**/PLACEHOLDER.md
+
+# R artifacts
+.Rproj.user/
+.Rhistory
+.Rdata
+.RData
+.Ruserdata
+*.Rproj
+
+# OS / editor artifacts
+.DS_Store
+*~
+*.swp
+
+# Python / notebook artifacts
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Logs
+*.log

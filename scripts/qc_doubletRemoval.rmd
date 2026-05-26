@@ -1,0 +1,381 @@
+---
+title: "SIMPlex — per-sample QC, CellBender loading, and doublet removal"
+subtitle: "Manuscript figures: Extended Data Fig. 2 (BC QC), Extended Data Fig. 3 (prostate QC)"
+author: "Marcos Tito Machado"
+output: html_document
+---
+
+## Set up
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r config, include=FALSE}
+# DATA_ROOT, HDF5 library, palettes — single source of truth for paths.
+source(here::here("config.R"))
+```
+
+```{r}
+set.seed(1)
+```
+
+## Load libraries
+PLEASE LOAD SEURAT4 ENVIRONMENT FOR DOUBLETFINDER TO WORK
+```{r package, message='hide',warning='hide',results='hold'}
+suppressMessages(require(Seurat))
+suppressMessages(require(Matrix))
+suppressMessages(require(tidyverse))
+suppressMessages(require(patchwork))
+suppressMessages(require(ggplot2))
+suppressMessages(require(DoubletFinder))
+suppressMessages(require(scCustomize))
+suppressMessages(require(harmony))
+
+options(future.globals.maxSize = 3.5 * 1024^3)  # 3.5 GiB
+```
+
+# Iterate through the samples, filter the data based on cellbender and return seurat objects 
+```{r}
+samples <- c("3962_1", "3962_2")
+
+for (sample in samples){
+  patient <- sub("_.*", "", sample)
+
+  # pathing
+  path_cellbender <- paste0(paste0(DATA_ROOT, "/cellbender/breast_cancer/", patient, "/", sample, "_cellbender_filtered.h5")
+  path_cellranger <- paste0(paste0(DATA_ROOT, "/cellbender/breast_cancer/", patient, "/", sample, "_filtered_feature_bc_matrix.h5")
+
+  # load cellbender data and create seurat object
+  cellbender <- Read_CellBender_h5_Mat(file_name = path_cellbender, use.names = TRUE)
+  cbd <- suppressWarnings(CreateSeuratObject(cellbender,  project = "SIMPlex_FFPE_VisHD"))
+  cbd$sample <- sample
+  rm(cellbender)
+
+  object <- cbd
+  # # filter based on 10x CellRanger fixed filtering
+  # cellranger <- Seurat::Read10X_h5(filename = path_cellranger, use.names = TRUE)
+  # cellranger <- CreateSeuratObject(cellranger,  project = "SIMPlex_FFPE_Xen")
+  # cellranger$sample <- sample
+  # features <- rownames(cellranger)
+  # object <- subset(cbd, features = features)
+  # rm(cellranger, features)
+
+  # print(paste0(as.character(length(rownames(cbd)) - length(rownames(object))), paste0(" features removed; sample ", sample)))
+  saveRDS(object, paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/"), patient, "/", sample, ".rds"))
+}
+```
+
+## Merge samples 
+```{r}
+samplePath <- paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/")
+spls <- list()
+for (splname in samples) {
+    patient <- sub("_.*", "", sample)
+    spl <- readRDS(paste0(samplePath, patient, "/", splname, ".rds"))
+    spl@meta.data$sample <- splname
+    spls[[splname]] <- spl
+}
+merged <- merge(x = spls[[1]], y = spls[-1])
+table(merged@meta.data$sample) #number of cells from each pool
+saveRDS(merged, paste0(samplePath, patient, "/", patient, "_merged.rds"))
+spl <- merged
+```
+
+### sample by sample
+(if doing not integrated)
+```{r}
+splname <- samples[3]
+spl <- readRDS(paste0(samplePath, splname, ".rds"))
+```
+
+### Wipe old information 
+```{r}
+spl <- merged
+DefaultAssay(spl) <- "RNA"
+toKeep <- c("sample", "nCount_RNA", "nFeature_RNA", "percent.mt", "orig.ident")
+spl@meta.data <- spl@meta.data[, toKeep, drop = FALSE]
+spl[["SCT"]] <- NULL
+spl@meta.data$sample_id <- splname
+Idents(spl) <- "sample_id"
+```
+
+## QC plot 
+
+```{r}
+spl$percent.mt <- PercentageFeatureSet(spl, pattern = "^MT-")
+feats <- c("nFeature_RNA", "nCount_RNA", "percent.mt")
+
+p1 <- VlnPlot(spl, features = feats, pt.size = 0, ncol = 3) + NoLegend()
+p2 <- ggplot() +
+  geom_histogram(data = spl[[]], aes(nFeature_RNA), fill = "red", alpha = 0.7, bins = 200) +
+  ggtitle("Unique genes per spot") + geom_vline(xintercept = 50, color = "black", linetype = "dashed") + coord_flip()
+c1 <- p1 - p2
+ggsave(paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/", patient,"_qc.pdf"), c1, width = 30, height = 10)
+```
+
+
+## Filtering (number of cells removed) on spl object
+
+```{r qc_filtering}
+selected_c <- WhichCells(spl, expression = nFeature_RNA > 50)
+selected_f <- rownames(spl)[Matrix::rowSums(spl) > 3]
+spl.filt <- subset(spl, features = selected_f, cells = selected_c)
+
+length(colnames(spl)) - length(colnames(spl.filt)) #number of cells removed after filtering
+rm(spl)
+gc()
+```
+
+
+## Normalize
+
+```{r norm}
+set.seed(1)
+library(glmGamPoi)
+options(future.globals.maxSize = 4 * 1024^3)
+spl.filt <- SCTransform(spl.filt, vst.flavor = "v2", verbose = FALSE)
+```
+
+
+## PCA
+
+```{r pca}
+set.seed(1)
+spl.filt <- RunPCA(spl.filt, features = VariableFeatures(object = spl.filt), verbose = FALSE)
+```
+
+
+## Dimensionality check
+```{r elbow_plot_1}
+p <- ElbowPlot(spl.filt, reduction = "pca", ndims = 50)
+ggsave(paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/", patient, "_elbow.pdf"), p, width = 10, height = 10)
+```
+
+
+## UMAP
+```{r umap}
+set.seed(1)
+spl.filt <- RunUMAP(spl.filt, dims = 1:30, verbose = FALSE)
+```
+
+
+## Plot UMAP
+
+```{r}
+Idents(spl.filt) <- "sample"
+wd <- paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
+
+pdf(paste0(wd, patient, "_pca_before_doublets_removal.pdf"), width = 10, height = 10)
+DimPlot(spl.filt, reduction = 'pca', label = TRUE) + ggtitle("spl SN", "pca_before_doublets_removal")
+dev.off()
+
+pdf(paste0(wd, patient, "_umap_before_doublets_removal.pdf"), width = 10, height = 10)
+DimPlot(spl.filt, reduction = 'umap', label = TRUE) + ggtitle("spl SN", "umap_before_doublets_removal")
+dev.off()
+
+# pdf(paste0(wd, splname, "_umap_before_doublets_removal_by_sample.pdf"), width = 10, height = 10)
+# DimPlot(spl.filt, reduction = 'umap', group.by = "sample_id", label = TRUE) + ggtitle("spl SN", "umap_before_doublets_removal_by_sample")
+# dev.off()
+```
+
+# Save n load
+```{r}
+saveRDS(spl.filt, paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_merged.rds"))
+```
+```{r}
+spl.filt <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_merged.rds"))
+```
+
+## Predict doublets
+### Apply on list of objects 
+
+```{r doubletfinder}
+wd <- paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/doublets/")
+if (!dir.exists(wd)) {
+  dir.create(wd, recursive = TRUE)
+}
+data_list <- list()
+datasets <- unique(spl.filt$sample_id)
+# Filter datasets to include only the specified sample(s)
+toDoublet <- splname
+datasets <- datasets[datasets %in% splname]
+
+data_list <- lapply(datasets, function(x) {
+  x <- as.character(x)
+  subset <- spl.filt[, spl.filt@meta.data$sample_id == x]
+
+  # Run parameter optimization with paramSweep
+  sweep.res <- paramSweep_v3(subset, PCs = 1:30, sct = TRUE)
+
+  sweep.stats <- summarizeSweep(sweep.res, GT = FALSE)
+  bcmvn <- find.pK(sweep.stats)
+  pdf(paste0(wd, "pK_estimation_optimized_individual_datasets_prefiltered_adjusted_", x, "_pK_barchart.pdf"), width = 10, height = 10)
+  barplot(bcmvn$BCmetric, names.arg = bcmvn$pK, las=2, main = paste0(x, " barchart_before_doublets_removal"))
+  dev.off()
+  pK <- bcmvn$pK[which.max(bcmvn$BCmetric)]
+  BC_pK <- as.numeric(as.character(pK[[1]])) #note: use a single numeric value as pK parameter in the doubletFinder_v3()
+
+  pdf(paste0(wd, "pK_estimation_optimized_individual_datasets_prefiltered_adjusted_", x, "_pK.pdf"), width = 10, height = 10)
+  print(ggplot(bcmvn, aes(pK, BCmetric, group = 1)) + geom_point() + geom_line())
+  dev.off()
+
+  # define the expected number of doublet cellscells.
+  nExp <- round(ncol(subset) * 0.08) # expect 8% doublets
+  subset <- doubletFinder_v3(subset, pN = 0.25, pK = BC_pK, nExp = nExp, PCs = 1:30, sct = TRUE)
+
+  subset@meta.data$pANN <- subset@meta.data[, length(colnames(subset@meta.data)) - 1]
+  subset@meta.data[, length(colnames(subset@meta.data)) - 2] <- NULL
+  subset@meta.data$DF.classifications <- subset@meta.data[, length(colnames(subset@meta.data)) - 1]
+  subset@meta.data[, length(colnames(subset@meta.data)) - 2] <- NULL
+
+  return(subset)
+})
+```
+
+
+## Save list of objects with doublets found
+
+```{r}
+saveRDS(data_list, paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_merged_postDoublet.rds"))
+```
+
+```{r}
+spl.doub <- data_list[[1]]
+```
+
+
+## Doublet removal
+```{r filter.doublets}
+colnames(spl.doub@meta.data)
+spl.filt_noDoublets <-  spl.doub[, spl.doub@meta.data[, "DF.classifications"] == "Singlet"]
+```
+
+```{r}
+length(colnames(spl.filt)) - length(colnames(spl.filt_noDoublets)) #number of doublets removed
+```
+
+## Normalize, highly variable features, scaling and PCA
+
+```{r pre-proc}
+set.seed(1)
+spl.filt_noDoublets <- SCTransform(spl.filt_noDoublets, vst.flavor = "v2", verbose = FALSE)
+spl.filt_noDoublets <- FindVariableFeatures(spl.filt_noDoublets, selection.method = "vst", verbose = FALSE)
+all.genes <- rownames(spl.filt_noDoublets)
+spl.filt_noDoublets <- ScaleData(spl.filt_noDoublets, features = all.genes, verbose = FALSE)
+spl.filt_noDoublets <- RunPCA(spl.filt_noDoublets, features = VariableFeatures(object = spl.filt_noDoublets), verbose = FALSE)
+```
+
+## Dimensionality check
+```{r elbow_plot_2}
+p <- ElbowPlot(spl.filt_noDoublets, reduction = "pca", ndims = 50)
+ggsave(paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/", patient, "elbow_noDoublets.pdf"), p, width = 10, height = 10)
+```
+
+## UMAP
+```{r umap_sample}
+set.seed(1)
+Idents(spl.filt) <- "sample"
+wd <- paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
+spl.filt_noDoublets <- RunUMAP(spl.filt_noDoublets, dims = 1:30, verbose = FALSE)
+
+pdf(paste0(wd, patient, "_pca_after_doublets_removal.pdf"), width = 10, height = 10)
+DimPlot(spl.filt_noDoublets, reduction = "pca", group.by = "sample", label = TRUE) + ggtitle("pca_after_doublet_removal")
+dev.off()
+
+pdf(paste0(wd, patient, "_umap_after_doublets_removal.pdf"), width = 10, height = 10)
+DimPlot(spl.filt_noDoublets, reduction = "umap", group.by = "sample", label = TRUE) + ggtitle("umap_after_doublet_removal")
+dev.off()
+```
+
+## Batch effect correction w/ Harmony 
+Only done for replicates / integrated dataset
+
+```{r}
+options(repr.plot.height = 2.5, repr.plot.width = 6)
+spl.filt_noDoublets <- spl.filt_noDoublets %>% 
+    RunHarmony("sample", plot_convergence = TRUE)
+```
+
+## UMAP after harmony
+Only done for replicates / integrated dataset
+
+```{r umap_sample}
+set.seed(1)
+Idents(spl.filt) <- "sample"
+wd <- paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
+spl.filt_noDoublets <- RunUMAP(spl.filt_noDoublets, dims = 1:30, verbose = FALSE, reduction = "harmony")
+
+pdf(paste0(wd, "pca_after_harmony.pdf"), width = 10, height = 10)
+DimPlot(spl.filt_noDoublets, reduction = "harmony", group.by = "sample", label = TRUE) + ggtitle("pca_after_harmony")
+dev.off()
+
+pdf(paste0(wd, "umap_after_harmony.pdf"), width = 10, height = 10)
+DimPlot(spl.filt_noDoublets, reduction = "umap", group.by = "sample", label = TRUE) + ggtitle("umap_after_harmony")
+dev.off()
+```
+
+
+## Find neighbours & Cluster
+```{r neighbours_cluster}
+set.seed(1)
+Idents(spl.filt) <- "sample"
+wd <- paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
+spl.filt_noDoublets <- FindNeighbors(spl.filt_noDoublets, dims = 1:30, verbose = FALSE)
+
+for (res in c(0.1, 0.25, .5, 0.8, 1, 1.25)){
+  spl.filt_noDoublets <- FindClusters(spl.filt_noDoublets, resolution = res, algorithm = 1, verbose = FALSE)
+}
+
+d1 <- DimPlot(spl.filt_noDoublets, reduction = "umap", group.by = "SCT_snn_res.0.1", label = TRUE) + 
+  DimPlot(spl.filt_noDoublets, reduction = "umap", group.by = "SCT_snn_res.0.25", label = TRUE) + 
+  DimPlot(spl.filt_noDoublets, reduction = "umap", group.by = "SCT_snn_res.0.5", label = TRUE)
+d2 <- DimPlot(spl.filt_noDoublets, reduction = "umap", group.by = "SCT_snn_res.0.8", label = TRUE) + 
+  DimPlot(spl.filt_noDoublets, reduction = "umap", group.by = "SCT_snn_res.1", label = TRUE) + 
+  DimPlot(spl.filt_noDoublets, reduction = "umap", group.by = "SCT_snn_res.1.25", label = TRUE)
+
+pdf(paste0(wd, patient, "_umap_cluster_resolutions.pdf"), width = 30, height = 15)
+d1 / d2
+dev.off()
+```
+
+## plot 3D UMAP
+
+```{r}
+library(plotly)
+library(htmlwidgets)
+
+# Run UMAP in 3D
+spl.filt_noDoublets <- RunUMAP(spl.filt_noDoublets, reduction = "harmony", dims = 1:30, n.components = 3)
+
+# Extract UMAP embeddings
+umap_3d <- Embeddings(spl.filt_noDoublets, "umap")
+
+# Create a data frame for plotting
+umap_3d_df <- as.data.frame(umap_3d)
+umap_3d_df$cell <- rownames(umap_3d_df)
+umap_3d_df$cluster <- Idents(spl.filt_noDoublets)
+
+# Plot using plotly 
+p <- plot_ly(umap_3d_df, x = ~UMAP_1, y = ~UMAP_2, z = ~UMAP_3, color = ~cluster, text = ~cell, colors = "Set1") %>%
+  add_markers(marker = list(size = 3)) %>%
+  layout(scene = list(xaxis = list(title = 'UMAP 1'),
+                      yaxis = list(title = 'UMAP 2'),
+                      zaxis = list(title = 'UMAP 3')),
+         title = "3D UMAP Plot")
+
+# Save the plot as an HTML file
+saveWidget(p, file = paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/pre_annotation_singleNuclei/clustering/umap_harmony_3D.html"))
+```
+
+
+## Save object
+```{r save_RDS}
+saveRDS(spl.filt_noDoublets, file = paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_noDoublets.rds"))
+```
+
+## Session info
+
+```{r session_info}
+sessionInfo()
+```
