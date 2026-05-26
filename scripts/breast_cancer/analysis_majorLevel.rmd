@@ -245,29 +245,29 @@ ggsave(
 saveRDS(int.all, file = paste0(rootObj, "SIMPlex_breast_allSamples.rds"))
 ```
 
-## Cell type representation versus garvan Atlas / others
+## Cell type representation versus bc_atlas Atlas / others
 
 #### load others 
 ```{r}
-garvan <- readRDS(paste0(DATA_ROOT, "/external_references/BC_atlas/miniatlas.rds"))
+bc_atlas <- readRDS(paste0(DATA_ROOT, "/external_references/BC_atlas/miniatlas.rds"))
 # merge epithelial layers
-garvan@meta.data$celltype_major <- ifelse(
-    garvan@meta.data$celltype_major %in% c("Normal Epithelial", "Cancer Epithelial"),
+bc_atlas@meta.data$celltype_major <- ifelse(
+    bc_atlas@meta.data$celltype_major %in% c("Normal Epithelial", "Cancer Epithelial"),
     "Epithelial",
-    garvan@meta.data$celltype_major
+    bc_atlas@meta.data$celltype_major
 )
 ```
 
 ```{r}
 int_counts <- table(int.all$seuratAnnotation_major)
-garvan_counts <- table(garvan$celltype_major)
+bc_atlas_counts <- table(bc_atlas$celltype_major)
 
 data <- data.frame(
-  CellType = c(names(int_counts), names(garvan_counts)),
-  Count = c(as.numeric(int_counts), as.numeric(garvan_counts)),
-  Dataset = rep(c("SIMPlex", "BC Atlas"), times = c(length(int_counts), length(garvan_counts))),
-  N = rep(c(length(unique(int.all$sample)), length(unique(garvan$Patient))), 
-            times = c(length(int_counts), length(garvan_counts)))
+  CellType = c(names(int_counts), names(bc_atlas_counts)),
+  Count = c(as.numeric(int_counts), as.numeric(bc_atlas_counts)),
+  Dataset = rep(c("SIMPlex", "BC Atlas"), times = c(length(int_counts), length(bc_atlas_counts))),
+  N = rep(c(length(unique(int.all$sample)), length(unique(bc_atlas$Patient))), 
+            times = c(length(int_counts), length(bc_atlas_counts)))
 )
 
 data <- data %>%
@@ -288,7 +288,7 @@ p1 <- ggplot(data) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
     scale_fill_manual(values = cols) +  
-    annotate("text", x = 1, y = 1.05, label = paste0("N=", length(unique(garvan$Patient)), "\nNcells=", length(garvan$Patient)), size = 3) +
+    annotate("text", x = 1, y = 1.05, label = paste0("N=", length(unique(bc_atlas$Patient)), "\nNcells=", length(bc_atlas$Patient)), size = 3) +
     annotate("text", x = 2, y = 1.05, label = paste0("N=", length(unique(int.all$sample)), "\nNnuclei=", length(int.all$sample)), size = 3)
             
 ggsave(
@@ -406,14 +406,14 @@ ggsave(
 
 ## Deconvolution of major cell types vs miniatlas
 
-#### load Garvan atlas
+#### load BC Atlas atlas
 ```{r}
-garvan <- readRDS(paste0(DATA_ROOT, "/external_references/BC_atlas/miniatlas.rds"))
+bc_atlas <- readRDS(paste0(DATA_ROOT, "/external_references/BC_atlas/miniatlas.rds"))
 # merge epithelial layers
-garvan@meta.data$celltype_major <- ifelse(
-    garvan@meta.data$celltype_major %in% c("Normal Epithelial", "Cancer Epithelial"),
+bc_atlas@meta.data$celltype_major <- ifelse(
+    bc_atlas@meta.data$celltype_major %in% c("Normal Epithelial", "Cancer Epithelial"),
     "Epithelial",
-    garvan@meta.data$celltype_major
+    bc_atlas@meta.data$celltype_major
 )
 ```
 
@@ -476,13 +476,13 @@ if (length(hd_sample_plots) > 0) {
 }
 ```
 
-#### Map Garvan Atlas to Spatial data
+#### Map BC Atlas Atlas to Spatial data
 ```{r}
 samples <- unique(int.all$sample)
 
 # ref steps 
-DefaultAssay(garvan) <- "RNA"
-garvan <- garvan |>
+DefaultAssay(bc_atlas) <- "RNA"
+bc_atlas <- bc_atlas |>
 FindVariableFeatures(nfeatures = 2000)
 for (sample in samples){
     vis <- spls[[sample]]
@@ -495,7 +495,7 @@ for (sample in samples){
     # NormalizeData() |>
     # FindVariableFeatures(nfeatures = nrow(vis)) |>
     # ScaleData()
-    vis <- RunNNLS(vis, singlecell_object = garvan, spatial_assay = DefaultAssay(vis), singlecell_assay = DefaultAssay(garvan), groups = ident, slot = "data", assay_name = celltype)
+    vis <- RunNNLS(vis, singlecell_object = bc_atlas, spatial_assay = DefaultAssay(vis), singlecell_assay = DefaultAssay(bc_atlas), groups = ident, slot = "data", assay_name = celltype)
     DefaultAssay(vis) <- celltype
     spls[[sample]] <- vis
 }
@@ -505,7 +505,7 @@ sample_plots <- list()
 hd_sample_plots <- list()
 
 for (sample in samples) {
-    features = unique(gsub("_", "-", garvan$celltype_major))
+    features = unique(gsub("_", "-", bc_atlas$celltype_major))
     vis <- spls[[sample]]
     if (length(vis$sample_id) > 5000) { # 11*11 Array Visium
         pt_size <- 1
@@ -728,7 +728,7 @@ for (assay in assays) {
 We observe that SIMPlex reaches higher morans correlation but visualization is hard since the numerical differences are not huge 
 despite probabily meaningful. 
 
-### 3D correlation of SIMPlex, Garvan Atlas and Control
+### 3D correlation of SIMPlex, BC Atlas Atlas and Control
 
 #### get correlation list 
 ```{r}
@@ -1565,12 +1565,12 @@ mergedVis_pathAnno <- subset(mergedVis_pathAnno, annot_reworked_simplified %in% 
 #### Stacked barplot of annotation, decon, and SN proportions 
 get data.frame with all data 
 ```{r}
-### --- A) Garvan scRNA --- ###
-garvan_counts <- table(garvan$celltype_major)
-garvan_props <- data.frame(
-    CellType = names(garvan_counts),
-    Proportion = as.numeric(garvan_counts) / sum(garvan_counts),
-    Dataset = "Garvan_scRNA"
+### --- A) BC Atlas scRNA --- ###
+bc_atlas_counts <- table(bc_atlas$celltype_major)
+bc_atlas_props <- data.frame(
+    CellType = names(bc_atlas_counts),
+    Proportion = as.numeric(bc_atlas_counts) / sum(bc_atlas_counts),
+    Dataset = "BC_Atlas"
 )
 
 ### --- B) Single nuclei --- ###
@@ -1581,12 +1581,12 @@ sn_props <- data.frame(
     Dataset = "SingleNuclei"
 )
 
-### --- C) Spatial Deconvolution (patspec + garvan) --- ###
+### --- C) Spatial Deconvolution (patspec + bc_atlas) --- ###
 patspec_mat <- mergedVis_pathAnno@assays$patspec_major_map@data
-garvan_mat  <- mergedVis_pathAnno@assays$garvan_major_map@data
+bc_atlas_mat  <- mergedVis_pathAnno@assays$garvan_major_map@data
 
 patspec_counts <- rowSums(patspec_mat)
-garvan_counts_sp <- rowSums(garvan_mat)
+bc_atlas_counts_sp <- rowSums(bc_atlas_mat)
 
 patspec_props <- data.frame(
     CellType = names(patspec_counts),
@@ -1594,10 +1594,10 @@ patspec_props <- data.frame(
     Dataset = "Spatial_patspec"
 )
 
-garvan_sp_props <- data.frame(
-    CellType = names(garvan_counts_sp),
-    Proportion = garvan_counts_sp / sum(garvan_counts_sp),
-    Dataset = "Spatial_garvan"
+bc_atlas_sp_props <- data.frame(
+    CellType = names(bc_atlas_counts_sp),
+    Proportion = bc_atlas_counts_sp / sum(bc_atlas_counts_sp),
+    Dataset = "Spatial_BC_Atlas"
 )
 
 ### --- D) Pathology annotation proportions --- ###
@@ -1610,10 +1610,10 @@ path_props <- data.frame(
 )
 
 all_props <- bind_rows(
-    garvan_props,
+    bc_atlas_props,
     sn_props,
     patspec_props,
-    garvan_sp_props,
+    bc_atlas_sp_props,
     path_props
 )
 ```
@@ -1623,10 +1623,10 @@ all_props <- bind_rows(
 # Recode datasets (unchanged)
 all_props$Dataset <- dplyr::recode(
   all_props$Dataset,
-  "Garvan_scRNA"   = "BC Atlas",
+  "BC_Atlas"   = "BC Atlas",
   "Pathology"      = "Histopathology",
   "SingleNuclei"   = "SIMPlex",
-  "Spatial_garvan" = "Deconv. BC Atlas",
+  "Spatial_BC_Atlas" = "Deconv. BC Atlas",
   "Spatial_patspec"= "Deconv. SIMPlex"
 )
 
@@ -2266,8 +2266,8 @@ patient <- "patient5"
 ress <- c("s_002um", "s_008um", "s_016um", "s_048um")
 control <- subset(int.all, subset = patient_ID != !!patient)
 simp <- subset(int.all, subset = patient_ID == patient)
-garvan$major_celltypes <- garvan$celltype_major
-refs <- list(garvan = garvan, SIMPlex = simp, control = control)
+bc_atlas$major_celltypes <- bc_atlas$celltype_major
+refs <- list(bc_atlas = bc_atlas, SIMPlex = simp, control = control)
 
 vis <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/HD/patient5_HD/patient5_HD_spatial.rds"))
 subset48 <- SubsetSTData(vis, spots = grep("s_048um", colnames(vis), value = TRUE)) 
@@ -2301,7 +2301,7 @@ for (res in ress) {
         ScaleData()
     VariableFeatures(subRes) <- var.features # we use bin 48's var features due to sparsity of HD 
 
-    for (refName in c("garvan", "SIMPlex", "control")){
+    for (refName in c("bc_atlas", "SIMPlex", "control")){
         ref <- refs[[refName]]
         DefaultAssay(subRes) <- "Spatial"
         subRes <- RunNNLS(subRes, singlecell_object = ref, spatial_assay = DefaultAssay(subRes), singlecell_assay = DefaultAssay(ref), groups = ident, slot = "data", assay_name = celltype)
@@ -2341,7 +2341,7 @@ DefaultAssay(subRes) <- "Spatial"
     ScaleData()
 VariableFeatures(subRes) <- var.features # we use bin 48's var features due to sparsity of HD 
 
-for (refName in c("garvan", "SIMPlex", "control")){
+for (refName in c("bc_atlas", "SIMPlex", "control")){
     ref <- refs[[refName]]
     DefaultAssay(subRes) <- "Spatial"
     subRes <- RunNNLS(subRes, singlecell_object = ref, spatial_assay = DefaultAssay(subRes), singlecell_assay = DefaultAssay(ref), groups = ident, slot = "data", assay_name = celltype)
@@ -2509,18 +2509,18 @@ mergedVis <- MergeSTData(spls[[1]], spls[-1])
 ```{r}
 # Extract matrices
 patspec_mat <- mergedVis@assays$patspec_major_map@data
-garvan_mat  <- mergedVis@assays$garvan_major_map@data
+bc_atlas_mat  <- mergedVis@assays$garvan_major_map@data
 
 # Sum across cells for each cell type 
 patspec_counts <- rowSums(patspec_mat)
-garvan_counts  <- rowSums(garvan_mat)
+bc_atlas_counts  <- rowSums(bc_atlas_mat)
 
 # Combine into data.frame
 data <- data.frame(
-    CellType = c(names(patspec_counts), names(garvan_counts)),
-    Count = c(as.numeric(patspec_counts), as.numeric(garvan_counts)),
+    CellType = c(names(patspec_counts), names(bc_atlas_counts)),
+    Count = c(as.numeric(patspec_counts), as.numeric(bc_atlas_counts)),
     Dataset = rep(c("SIMPlex", "BC Atlas"), 
-                                times = c(length(patspec_counts), length(garvan_counts)))
+                                times = c(length(patspec_counts), length(bc_atlas_counts)))
 )
 
 # Compute proportions per dataset

@@ -56,7 +56,7 @@ d1 / d2
 dev.off()
 
 ggsave(
-    filename = paste0(wd, "/garvan_annot.pdf"),
+    filename = paste0(wd, "/bc_atlas_annot.pdf"),
     plot = DimPlot(obj, group.by = c("celltype_major_adipocyte"), label = TRUE),
     width = 7,
     height = 7

@@ -1,6 +1,6 @@
 ---
 title: "SIMPlex Breast Cancer — fine-grained cell state analysis and niche characterisation"
-subtitle: "Manuscript figures: Fig. 2i–k, Fig. 3, Extended Data Fig. 7–9"
+subtitle: "Manuscript figures: Fig. 2i-k, Fig. 3, Extended Data Fig. 7-9"
 author: "Marcos Tito Machado"
 output: html_document
 ---
@@ -63,7 +63,7 @@ int.all <- readRDS(paste0(rootObj, "SIMPlex_breast_allSamples.rds"))
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds"))
     if (file.exists(output_path)) {
         spls[[sample]] <- readRDS(output_path)
     }
@@ -663,7 +663,7 @@ ggsave(
 
 ## Comparing our EPI clusters to literature
 
-WE compare gene expression to our Reference atlas from Garvan
+WE compare gene expression to our Reference atlas from BC Atlas
 
 #### Gene expression similarity heatmap 
 
@@ -1117,7 +1117,7 @@ ggsave(
 
 ## Comparing our Immune clusters to literature
 
-WE compare gene expression to our Reference atlas from Garvan. 
+WE compare gene expression to our Reference atlas from BC Atlas (Wu et al. 2021).
 The approach used was to select the clustering resolution that allowed the best correlation between clusters and Ref. Atlas "celltype_minor" subpopulations
 
 #### Gene expression similarity heatmap 
@@ -1581,7 +1581,7 @@ wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/final_subpo
 ## load 
 ```{r}
 int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
-mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations_simplex_garvan.rds"))
+mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
 ```
 
 ### final cleanup 
@@ -1724,7 +1724,7 @@ if (length(spls) > 1) {
 }
 mergedVis <- JoinLayers(mergedVis)
 table(mergedVis$sample_id)
-# saveRDS(mergedVis, paste0(rootObj, "merged_visium_deconSubpopulations_simplex_garvan.rds"))
+# saveRDS(mergedVis, paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
 ```
 
 ```{r}
@@ -2901,7 +2901,7 @@ library(igraph)
 wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/ref_atlas_comparisons/")
 int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
 mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations.rds"))
-garvan <- readRDS(paste0(DATA_ROOT, "/external_references/BC_atlas/miniatlas.rds"))
+bc_atlas <- readRDS(paste0(DATA_ROOT, "/external_references/BC_atlas/miniatlas.rds"))
 # split by sample
 spls <- list()
 samples <- unique(mergedVis$sample_id)
@@ -2914,12 +2914,12 @@ for (sample in samples){
 ###### map Vis 55um with ref. atlas
 ```{r}
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
-garvan$celltype_subset <- gsub("[ _]", "-", garvan$celltype_subset)
-features = unique(garvan$celltype_subset)
+bc_atlas$celltype_subset <- gsub("[ _]", "-", bc_atlas$celltype_subset)
+features = unique(bc_atlas$celltype_subset)
 for (sample in samples){
     vis <- spls[[sample]]
     patient_ID <- sub("_.*$", "", sample)
-    ref <- garvan
+    ref <- bc_atlas
     
     ## Map w/ semla NNLS
     ident <- "celltype_subset"
@@ -2977,7 +2977,7 @@ spls[[4]]@assays <- spls[[4]]@assays[!grepl("^c2l_", names(spls[[4]]@assays))]
 
 mergedVis <- MergeSTData(spls[[1]], spls[-1])
 table(mergedVis$sample_id)
-# saveRDS(mergedVis, paste0(rootObj, "merged_visium_deconSubpopulations_simplex_garvan.rds"))
+# saveRDS(mergedVis, paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
 ```
 
 ##### merged
@@ -2991,7 +2991,7 @@ cor_matrix <- cor(data, method = "spearman", use = "pairwise.complete.obs")
 diag(cor_matrix) <- NA
 
 # Generate heatmap and save as PDF
-pdf(paste0(wd, "correlation/correlation_garvanSubset.pdf"), width = 13, height = 10)
+pdf(paste0(wd, "correlation/correlation_bc_atlas_subset.pdf"), width = 13, height = 10)
 heatmap3(
     cor_matrix, 
     margins = c(14, 14), 
@@ -3432,8 +3432,8 @@ wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/HD/")
 patient <- "patient5"
 ress <- c("s_002um", "s_008um", "s_016um", "s_048um")
 simp <- subset(int.all, subset = patient_ID == patient)
-garvan$subpopulation <- garvan$celltype_subset
-refs <- list(garvan = garvan, SIMPlex = simp)
+bc_atlas$subpopulation <- bc_atlas$celltype_subset
+refs <- list(bc_atlas = bc_atlas, SIMPlex = simp)
 
 vis <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/HD/patient5_HD/patient5_HD_spatial.rds"))
 subset48 <- SubsetSTData(vis, spots = grep("s_048um", colnames(vis), value = TRUE)) 
@@ -3467,7 +3467,7 @@ for (res in ress) {
         ScaleData()
     VariableFeatures(subRes) <- var.features # we use bin 48's var features due to sparsity of HD 
 
-    for (refName in c("garvan", "SIMPlex")){
+    for (refName in c("bc_atlas", "SIMPlex")){
         celltype <- paste0(refName, "_subpopulation_map_", res) # name of the mapping to assign to the visium object
         ref <- refs[[refName]]
         ref$subpopulation <- gsub("/", "-", ref$subpopulation)
@@ -3508,7 +3508,7 @@ if (crop == TRUE) {
 }
 subRes <- SubsetSTData(subRes, spots = barcodes_in_range)
 
-for (refName in c("garvan", "SIMPlex")){
+for (refName in c("bc_atlas", "SIMPlex")){
     # Plot each resolution separately
     features <- unique(gsub("_", "-", rownames(subRes)))
     features <- features[order(features)]  # Ensure consistent order
@@ -4285,14 +4285,14 @@ sceasy::convertFormat(mergedVis, from="seurat", to="anndata", assay = "subpopula
 ### fix image pathways
 ```{r}
 mergedVis@tools$Staffli@imgs <- c(
-  "patient1_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/3925_1K_R1S/spatial/tissue_lowres_image.png",
-  "patient2_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/4286-2_4F_R1S/spatial/tissue_lowres_image.png",
-  "patient4_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/3962_3H_R1L/spatial/tissue_hires_image.png",
-  "patient5_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/4497-1_2K_R1L/spatial/tissue_hires_image.png",
-  "patient6_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/4754_1G_R1L/spatial/tissue_hires_image.png",
-  "patient7_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/3585_1K_R1L/spatial/tissue_hires_image.png",
-  "patient8_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/4850_3F_R1S/spatial/tissue_hires_image.png",
-  "patient9_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/4246_3E_R1L/spatial/tissue_hires_image.png"
+  "patient1_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/patient1_55um/spatial/tissue_lowres_image.png"),
+  "patient2_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/patient2_55um/spatial/tissue_lowres_image.png"),
+  "patient4_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/patient4_55um/spatial/tissue_hires_image.png"),
+  "patient5_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/patient5_55um/spatial/tissue_hires_image.png"),
+  "patient6_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/patient6_55um/spatial/tissue_hires_image.png"),
+  "patient7_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/patient7_55um/spatial/tissue_hires_image.png"),
+  "patient8_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/patient8_55um/spatial/tissue_hires_image.png"),
+  "patient9_55um" = paste0(DATA_ROOT, "/spaceranger/breast_cancer/55um/patient9_55um/spatial/tissue_hires_image.png")
 )
 mergedVis <- LoadImages(mergedVis)
 ```
