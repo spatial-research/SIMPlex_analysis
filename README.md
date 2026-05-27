@@ -14,7 +14,7 @@ SIMPlex (**S**ingle-section **I**ntegrated **M**ulti-layer **P**rofiling) genera
 SIMPlex_analysis/
 ├── README.md
 ├── config.R                       # DATA_ROOT, FIGS_ROOT, HDF5 path, shared palettes — edit once per machine
-├── .gitignore                     # gitignores data files by extension and figs/
+├── .gitignore                     # gitignores data files and figure files by extension; directory structure tracked
 ├── environment/
 │   ├── environment.yml            # main R env (Seurat v5, semla, harmony, RcppML, singlet, …)
 │   ├── installed_packages.csv     # complete R package manifest with versions
@@ -46,7 +46,7 @@ SIMPlex_analysis/
 │   ├── cellbender/                # CellBender-denoised h5 matrices
 │   ├── raw_data/                  # FASTQs + H&E images (deposited upon publication)
 │   └── xenium/                    # Full Xenium Analyzer outputs
-├── figs/                          # Generated figures (gitignored) — written by every script
+├── figs/                          # Generated figures — directory tracked, figure files gitignored by extension
 └── docs/
     ├── script_to_figure_map.md    # detailed script ↔ figure mapping with manuscript callouts
     └── data_availability.md       # public DOI, raw-data status, external-reference download instructions
@@ -73,22 +73,25 @@ See `docs/script_to_figure_map.md` for a per-figure narrative.
 
 ## Cohort
 
-| sample | patient_ID | assays | subtype |
-|--------|------------|--------|---------|
-| patient1_55um | patient1 | Visium 55 µm | LuminalA |
-| patient2_55um | patient2 | Visium 55 µm | LuminalB(ER) |
-| patient4_55um, patient4_HD | patient4 | Visium 55 µm + HD + snRNA + Xenium | **TNBC** |
-| patient5_55um, patient5_HD | patient5 | Visium 55 µm + HD + snRNA + Xenium | **TNBC** |
-| patient6_55um | patient6 | Visium 55 µm | TNBC |
-| patient7_55um | patient7 | Visium 55 µm | LuminalB(ER) |
-| patient8_55um | patient8 | Visium 55 µm | LuminalA |
-| patient9_55um | patient9 | Visium 55 µm | LuminalB(ER) |
-| patient10_55um | patient10 | Visium 55 µm (fresh-frozen, 18 µm) | — |
-| pt10_HD | pt10 | Visium HD + snRNA | Prostate cancer |
-| pt20_HD | pt20 | Visium HD + snRNA | Prostate cancer |
-| mouse_brain A, B | A, B | Visium 12 µm FF + snRNA | Mouse brain |
+| sample | patient_ID | assays | subtype | notes |
+|--------|------------|--------|---------|-------|
+| patient1_55um | patient1 | Visium 55 µm | LuminalA | |
+| patient2_55um | patient2 | Visium 55 µm | LuminalB(ER) | |
+| patient4_55um | patient4 | Visium 55 µm | **TNBC** | |
+| patient4_HD | patient4 | Visium HD + snRNA | **TNBC** | consecutive section |
+| patient5_55um | patient5 | Visium 55 µm | **TNBC** | |
+| patient5_HD | patient5 | Visium HD + snRNA + Xenium | **TNBC** | consecutive section |
+| patient6_55um | patient6 | Visium 55 µm | TNBC | |
+| patient7_55um | patient7 | Visium 55 µm | LuminalB(ER) | |
+| patient8_55um | patient8 | Visium 55 µm | LuminalA | |
+| patient9_55um | patient9 | Visium 55 µm | LuminalB(ER) | |
+| patient10_55um | patient10 | Visium 55 µm | unknown | fresh-frozen 18 µm; not in integrative analysis |
+| pt10_HD | pt10 | Visium HD + snRNA | Prostate cancer | |
+| pt20_HD | pt20 | Visium HD + snRNA | Prostate cancer | |
+| A | A | Visium + snRNA | Mouse brain | |
+| B | B | Visium + snRNA | Mouse brain | |
 
-Patients 4 and 5 are the deeply multimodal TNBC cases (Visium 55 µm + Visium HD + snRNA + consecutive Xenium). Internal sample IDs map to public patient IDs via `resources/sample_metadata.csv`.
+Patients 4 and 5 are the deeply multimodal TNBC cases (Visium 55 µm + Visium HD + snRNA + consecutive Xenium). Full sample metadata is in `resources/sample_metadata.csv`. Patient 3 appears in CTA and histopathology annotations (`resources/breast_cancer/`) but is not included in the integrative snRNA analysis.
 
 ---
 
@@ -131,11 +134,12 @@ If `environment-seurat4.yml` is not in your copy, the QC script will run under a
 
 ### 3. Configure paths
 
-Open `config.R` and update two things if needed:
+Open `config.R` and update if needed:
 
 ```r
-DATA_ROOT <- here::here("data")                                                # default: data/ inside this repo (gitignored)
-HDF5_LIB  <- "/home/m.abreumachado/apps/hdf5/lib/libhdf5_hl.so.200"            # path to libhdf5_hl.so.200 on your system
+DATA_ROOT <- here::here("data")    # heavy data root (R objects, references, pipeline outputs)
+FIGS_ROOT <- here::here("figs")    # figure output root
+HDF5_LIB  <- "/home/m.abreumachado/apps/hdf5/lib/libhdf5_hl.so.200"  # path to libhdf5_hl.so.200 on your system
 ```
 
 ### 4. Populate `data/`
@@ -144,7 +148,7 @@ HDF5_LIB  <- "/home/m.abreumachado/apps/hdf5/lib/libhdf5_hl.so.200"            #
 
 The most important step is downloading **`data/r_objects/`** from the [KTH Data Repository (DOI `10.71775/kth.jg1wh-kza40`)](https://datarepository.kth.se/records/jg1wh-kza40) (~37 GB) — that single step lets all `analysis_*.rmd` and `mouse_brain/*.Rmd` scripts run end-to-end.
 
-Generated figures are written to **`figs/`** at the repository root (gitignored).
+Generated figures are written to **`figs/`** at the repository root (directory tracked in git; figure files ignored by extension — see `figs/README.md`).
 
 See `docs/data_availability.md` for the full inventory and external-reference download instructions.
 
