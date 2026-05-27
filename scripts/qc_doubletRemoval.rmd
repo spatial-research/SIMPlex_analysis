@@ -62,13 +62,13 @@ for (sample in samples){
   # rm(cellranger, features)
 
   # print(paste0(as.character(length(rownames(cbd)) - length(rownames(object))), paste0(" features removed; sample ", sample)))
-  saveRDS(object, paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/"), patient, "/", sample, ".rds"))
+  saveRDS(object, paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/per_sample/"), patient, "/", sample, ".rds"))
 }
 ```
 
 ## Merge samples 
 ```{r}
-samplePath <- paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/")
+samplePath <- paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/per_sample/")
 spls <- list()
 for (splname in samples) {
     patient <- sub("_.*", "", sample)
@@ -111,7 +111,7 @@ p2 <- ggplot() +
   geom_histogram(data = spl[[]], aes(nFeature_RNA), fill = "red", alpha = 0.7, bins = 200) +
   ggtitle("Unique genes per spot") + geom_vline(xintercept = 50, color = "black", linetype = "dashed") + coord_flip()
 c1 <- p1 - p2
-ggsave(paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/", patient,"_qc.pdf"), c1, width = 30, height = 10)
+ggsave(paste0(paste0(FIGS_ROOT, "/breast_cancer/qc_doubletRemoval/", patient, "/", patient,"_qc.pdf"), c1, width = 30, height = 10)
 ```
 
 
@@ -149,7 +149,7 @@ spl.filt <- RunPCA(spl.filt, features = VariableFeatures(object = spl.filt), ver
 ## Dimensionality check
 ```{r elbow_plot_1}
 p <- ElbowPlot(spl.filt, reduction = "pca", ndims = 50)
-ggsave(paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/", patient, "_elbow.pdf"), p, width = 10, height = 10)
+ggsave(paste0(paste0(FIGS_ROOT, "/breast_cancer/qc_doubletRemoval/", patient, "/clustering/", patient, "_elbow.pdf"), p, width = 10, height = 10)
 ```
 
 
@@ -164,7 +164,7 @@ spl.filt <- RunUMAP(spl.filt, dims = 1:30, verbose = FALSE)
 
 ```{r}
 Idents(spl.filt) <- "sample"
-wd <- paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
+wd <- paste0(paste0(FIGS_ROOT, "/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
 
 pdf(paste0(wd, patient, "_pca_before_doublets_removal.pdf"), width = 10, height = 10)
 DimPlot(spl.filt, reduction = 'pca', label = TRUE) + ggtitle("spl SN", "pca_before_doublets_removal")
@@ -181,17 +181,17 @@ dev.off()
 
 # Save n load
 ```{r}
-saveRDS(spl.filt, paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_merged.rds"))
+saveRDS(spl.filt, paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_merged.rds"))
 ```
 ```{r}
-spl.filt <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_merged.rds"))
+spl.filt <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_merged.rds"))
 ```
 
 ## Predict doublets
 ### Apply on list of objects 
 
 ```{r doubletfinder}
-wd <- paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/doublets/")
+wd <- paste0(paste0(FIGS_ROOT, "/breast_cancer/qc_doubletRemoval/", patient, "/doublets/")
 if (!dir.exists(wd)) {
   dir.create(wd, recursive = TRUE)
 }
@@ -237,7 +237,7 @@ data_list <- lapply(datasets, function(x) {
 ## Save list of objects with doublets found
 
 ```{r}
-saveRDS(data_list, paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_merged_postDoublet.rds"))
+saveRDS(data_list, paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_merged_postDoublet.rds"))
 ```
 
 ```{r}
@@ -269,14 +269,14 @@ spl.filt_noDoublets <- RunPCA(spl.filt_noDoublets, features = VariableFeatures(o
 ## Dimensionality check
 ```{r elbow_plot_2}
 p <- ElbowPlot(spl.filt_noDoublets, reduction = "pca", ndims = 50)
-ggsave(paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/", patient, "elbow_noDoublets.pdf"), p, width = 10, height = 10)
+ggsave(paste0(paste0(FIGS_ROOT, "/breast_cancer/qc_doubletRemoval/", patient, "/clustering/", patient, "elbow_noDoublets.pdf"), p, width = 10, height = 10)
 ```
 
 ## UMAP
 ```{r umap_sample}
 set.seed(1)
 Idents(spl.filt) <- "sample"
-wd <- paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
+wd <- paste0(paste0(FIGS_ROOT, "/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
 spl.filt_noDoublets <- RunUMAP(spl.filt_noDoublets, dims = 1:30, verbose = FALSE)
 
 pdf(paste0(wd, patient, "_pca_after_doublets_removal.pdf"), width = 10, height = 10)
@@ -303,7 +303,7 @@ Only done for replicates / integrated dataset
 ```{r umap_sample}
 set.seed(1)
 Idents(spl.filt) <- "sample"
-wd <- paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
+wd <- paste0(paste0(FIGS_ROOT, "/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
 spl.filt_noDoublets <- RunUMAP(spl.filt_noDoublets, dims = 1:30, verbose = FALSE, reduction = "harmony")
 
 pdf(paste0(wd, "pca_after_harmony.pdf"), width = 10, height = 10)
@@ -320,7 +320,7 @@ dev.off()
 ```{r neighbours_cluster}
 set.seed(1)
 Idents(spl.filt) <- "sample"
-wd <- paste0(paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
+wd <- paste0(paste0(FIGS_ROOT, "/breast_cancer/qc_doubletRemoval/", patient, "/clustering/")
 spl.filt_noDoublets <- FindNeighbors(spl.filt_noDoublets, dims = 1:30, verbose = FALSE)
 
 for (res in c(0.1, 0.25, .5, 0.8, 1, 1.25)){
@@ -365,13 +365,13 @@ p <- plot_ly(umap_3d_df, x = ~UMAP_1, y = ~UMAP_2, z = ~UMAP_3, color = ~cluster
          title = "3D UMAP Plot")
 
 # Save the plot as an HTML file
-saveWidget(p, file = paste0(DATA_ROOT, "/figs/breast_cancer/qc_doubletRemoval/pre_annotation_singleNuclei/clustering/umap_harmony_3D.html"))
+saveWidget(p, file = paste0(FIGS_ROOT, "/breast_cancer/qc_doubletRemoval/pre_annotation_singleNuclei/clustering/umap_harmony_3D.html"))
 ```
 
 
 ## Save object
 ```{r save_RDS}
-saveRDS(spl.filt_noDoublets, file = paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_noDoublets.rds"))
+saveRDS(spl.filt_noDoublets, file = paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/per_sample/"), patient, "/", patient, "_noDoublets.rds"))
 ```
 
 ## Session info

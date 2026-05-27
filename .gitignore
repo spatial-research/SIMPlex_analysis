@@ -1,13 +1,37 @@
-# Heavy data — R objects, SpaceRanger/CellRanger outputs, FASTQs, Xenium zarrs,
-# external references, generated figures. Lives inside the repository directory
-# for self-containment but is NOT git-tracked. See config.R (`DATA_ROOT`).
-#
-# (Small git-tracked metadata lives in `resources/` instead.)
-data/
-!data/.gitkeep
-!data/**/PLACEHOLDER.md
+# ---- data/ ------------------------------------------------------------------
+# The data/ directory structure and .md files are git-tracked.
+# Actual data files (R objects, matrices, images, pipeline outputs) are ignored.
+data/**/*.rds
+data/**/*.h5
+data/**/*.loom
+data/**/*.zarr.zip
+data/**/*.tif
+data/**/*.tiff
+data/**/*.png
+data/**/*.jpg
+data/**/*.jpeg
+data/**/*.html
+data/**/*.csv
+data/**/*.json
+data/**/*.xenium
+data/**/*.gz
+data/**/*.tar
 
-# R artifacts
+# ---- figs/ ------------------------------------------------------------------
+# Directory structure and README.md files are git-tracked.
+# Actual figure files are ignored by extension.
+figs/**/*.pdf
+figs/**/*.jpg
+figs/**/*.jpeg
+figs/**/*.png
+figs/**/*.svg
+figs/**/*.tif
+figs/**/*.tiff
+figs/**/*.eps
+figs/**/*.html
+figs/**/*.csv
+
+# ---- R artifacts ------------------------------------------------------------
 .Rproj.user/
 .Rhistory
 .Rdata
@@ -15,15 +39,15 @@ data/
 .Ruserdata
 *.Rproj
 
-# OS / editor artifacts
+# ---- OS / editor artifacts --------------------------------------------------
 .DS_Store
 *~
 *.swp
 
-# Python / notebook artifacts
+# ---- Python / notebook artifacts --------------------------------------------
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
-# Logs
+# ---- Logs -------------------------------------------------------------------
 *.log

@@ -34,8 +34,8 @@ library(harmony)
 
 ### Settings 
 ```{r}
-rootObj <- paste0(DATA_ROOT, "/processed_data/prostate_cancer/integrated/cafs/")
-wd <- paste0(DATA_ROOT, "/figs/prostate_cancer/cafs/")
+rootObj <- paste0(DATA_ROOT, "/r_objects/prostate_cancer/integrated/cafs/")
+wd <- paste0(FIGS_ROOT, "/prostate_cancer/cafs/")
 if (!dir.exists(rootObj)) {
     dir.create(rootObj, recursive = TRUE)
 }
@@ -48,11 +48,11 @@ if (!dir.exists(wd)) {
 ```{r}
 spl_paths <- list(
     "pt10" = list(
-        path = paste0(DATA_ROOT, "/processed_data/prostate_cancer/single_nuclei/pt10_HD_seuratAnnotation.rds"),
+        path = paste0(DATA_ROOT, "/r_objects/prostate_cancer/single_nuclei/pt10_HD_seuratAnnotation.rds"),
         subtype = "NA"
     ),
     "pt20" = list(
-        path = paste0(DATA_ROOT, "/processed_data/prostate_cancer/single_nuclei/pt20_HD_seuratAnnotation.rds"),
+        path = paste0(DATA_ROOT, "/r_objects/prostate_cancer/single_nuclei/pt20_HD_seuratAnnotation.rds"),
         subtype = "NA"
     )
 )
@@ -71,7 +71,7 @@ table(merged@meta.data$sample)
 
 #### Integrate all 
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/prostate_cancer/total_integration/")
+wd <- paste0(FIGS_ROOT, "/prostate_cancer/total_integration/")
 DefaultAssay(merged) <- "RNA"
 set.seed(1)
 merged <- merged %>%
@@ -111,7 +111,7 @@ ggsave(
     width = 30,
     height = 10
 )
-wd <- paste0(DATA_ROOT, "/figs/prostate_cancer/cafs/")
+wd <- paste0(FIGS_ROOT, "/prostate_cancer/cafs/")
 ```
 
 ## Integrate CAFs only 
@@ -184,7 +184,7 @@ dev.off()
 ```{r}
 renamed = TRUE
 if (renamed){
-    wd <- paste0(DATA_ROOT, "/figs/prostate_cancer/cafs/RENAMED_")
+    wd <- paste0(FIGS_ROOT, "/prostate_cancer/cafs/RENAMED_")
 }
 ```
 
@@ -408,7 +408,7 @@ infoTable <- data.frame(
   sample_id = sample
 )
 se.hd <- ReadVisiumData(infoTable)
-saveRDS(se.hd, paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/HD/", sample, "_visHD.rds"))
+saveRDS(se.hd, paste0(paste0(DATA_ROOT, "/r_objects/prostate_cancer/HD/", sample, "_visHD.rds"))
 }
 ```
 
@@ -417,7 +417,7 @@ saveRDS(se.hd, paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/HD/", s
 samples <- unique(int.all$sample)
 spls <- list()
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/HD/", sample, "_visHD.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/prostate_cancer/HD/", sample, "_visHD.rds"))
     vis <- SubsetSTData(vis, expression = resolution == "016um") # use this resolution 
 
     ## Map w/ semla NNLS
@@ -443,7 +443,7 @@ DefaultAssay(mergedVis) <- celltype
 p <- MapFeatures(mergedVis, features = rownames(mergedVis)[grepl("CAF", rownames(mergedVis))], colors = viridis::turbo(11), label_by = "sample_id", pt_size = 0.35, override_plot_dims = TRUE, scale = "shared")
 ggsave(paste0(wd, "map/", "all_integratedMap_patient_specific.jpg"), p, width = 36, height = 18, dpi = 300, limitsize = FALSE)
 p <- MapFeatures(mergedVis, features = rownames(mergedVis), colors = viridis::turbo(11), label_by = "sample_id", pt_size = 0.4, override_plot_dims = TRUE, scale = "shared")
-ggsave(paste0(paste0(DATA_ROOT, "/figs/prostate_cancer/total_integration/"), "map/","all_integratedMap.jpg"), p, width = 105, height = 20, dpi = 300, limitsize = FALSE)
+ggsave(paste0(paste0(FIGS_ROOT, "/prostate_cancer/total_integration/"), "map/","all_integratedMap.jpg"), p, width = 105, height = 20, dpi = 300, limitsize = FALSE)
 ```
 
 ##### Deconvolution of the patient labels 
@@ -451,7 +451,7 @@ ggsave(paste0(paste0(DATA_ROOT, "/figs/prostate_cancer/total_integration/"), "ma
 samples <- unique(int.all$sample)
 spls <- list()
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/HD/", sample, "_visHD.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/prostate_cancer/HD/", sample, "_visHD.rds"))
     vis <- SubsetSTData(vis, expression = resolution == "016um") # use this resolution 
 
     ## Map w/ semla NNLS
@@ -477,12 +477,12 @@ table(mergedVis@meta.data$sample_id)
 DefaultAssay(mergedVis) <- celltype
 
 p <- MapFeatures(mergedVis, features = rownames(mergedVis), colors = viridis::turbo(11), label_by = "sample_id", pt_size = 0.4, override_plot_dims = TRUE, scale = "shared")
-ggsave(paste0(paste0(DATA_ROOT, "/figs/prostate_cancer/total_integration/"), "map/","all_patientID_map.jpg"), p, width = 10, height = 10, dpi = 300, limitsize = FALSE)
+ggsave(paste0(paste0(FIGS_ROOT, "/prostate_cancer/total_integration/"), "map/","all_patientID_map.jpg"), p, width = 10, height = 10, dpi = 300, limitsize = FALSE)
 ```
 
 ```{r}
 saveRDS(int, paste0(rootObj, "integrated_cafs.rds"))
-saveRDS(int.all, paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/integrated/"), "integrated_all.rds"))
+saveRDS(int.all, paste0(paste0(DATA_ROOT, "/r_objects/prostate_cancer/integrated/"), "integrated_all.rds"))
 ```
 
 ### CAF cell state markers
@@ -520,8 +520,8 @@ int@meta.data$seurat_clusters <- int@meta.data$CAF_clusters_integratedRenamed
 
 ### Settings 
 ```{r}
-rootObj <- paste0(DATA_ROOT, "/processed_data/prostate_cancer/integrated/epithelial/")
-wd <- paste0(DATA_ROOT, "/figs/prostate_cancer/epithelial/")
+rootObj <- paste0(DATA_ROOT, "/r_objects/prostate_cancer/integrated/epithelial/")
+wd <- paste0(FIGS_ROOT, "/prostate_cancer/epithelial/")
 if (!dir.exists(rootObj)) {
     dir.create(rootObj, recursive = TRUE)
 }
@@ -600,7 +600,7 @@ dev.off()
 ```{r}
 renamed = FALSE
 if (renamed){
-    wd <- paste0(DATA_ROOT, "/figs/prostate_cancer/epithelial/RENAMED_")
+    wd <- paste0(FIGS_ROOT, "/prostate_cancer/epithelial/RENAMED_")
 }
 ```
 
@@ -710,7 +710,7 @@ ggsave(
 samples <- unique(int.all$sample)
 spls <- list()
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/HD/", sample, "_visHD.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/prostate_cancer/HD/", sample, "_visHD.rds"))
     vis <- SubsetSTData(vis, expression = resolution == "016um") # use this resolution 
 
     ## Map w/ semla NNLS
@@ -736,12 +736,12 @@ DefaultAssay(mergedVis) <- celltype
 p <- MapFeatures(mergedVis, features = rownames(mergedVis)[grepl("Epithelial", rownames(mergedVis))], colors = viridis::turbo(11), label_by = "sample_id", pt_size = 0.35, override_plot_dims = TRUE, scale = "shared")
 ggsave(paste0(wd, "map/", "all_integratedMap_patient_specific.jpg"), p, width = 36, height = 18, dpi = 300, limitsize = FALSE)
 # p <- MapFeatures(mergedVis, features = rownames(mergedVis), colors = viridis::turbo(11), label_by = "sample_id", pt_size = 0.4, override_plot_dims = TRUE, scale = "shared")
-# ggsave(paste0(paste0(DATA_ROOT, "/figs/prostate_cancer/total_integration/"), "map/","all_integratedMap.jpg"), p, width = 105, height = 20, dpi = 300, limitsize = FALSE)
+# ggsave(paste0(paste0(FIGS_ROOT, "/prostate_cancer/total_integration/"), "map/","all_integratedMap.jpg"), p, width = 105, height = 20, dpi = 300, limitsize = FALSE)
 ```
 
 ```{r}
 saveRDS(int, paste0(rootObj, "integrated_epithelial.rds"))
-saveRDS(int.all, paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/integrated/"), "integrated_all_epithelial.rds"))
+saveRDS(int.all, paste0(paste0(DATA_ROOT, "/r_objects/prostate_cancer/integrated/"), "integrated_all_epithelial.rds"))
 ```
 
 ### Epithelial cell state markers
@@ -773,7 +773,7 @@ int@meta.data$seurat_clusters <- int@meta.data$epi_clusters_integratedRenamed
 ### Comparison w/ Deconvolution with Prostate Cancer reference
 ```{r}
 ref <- readRDS(paste0(DATA_ROOT, "/external_references/PCa_atlas/PCa_atlas_annotated_Oct23_update.rds"))
-int.all <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/integrated/"), "integrated_all_epithelial.rds"))
+int.all <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/prostate_cancer/integrated/"), "integrated_all_epithelial.rds"))
 ```
 
 #### Deconvolve by sample 
@@ -781,7 +781,7 @@ int.all <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/int
 samples <- unique(int.all$sample)
 spls <- list()
 for (sample in samples[2]){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/HD/", sample, "_visHD.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/prostate_cancer/HD/", sample, "_visHD.rds"))
     vis <- SubsetSTData(vis, expression = resolution == "016um") # use this resolution 
 
     ## Map w/ semla NNLS
@@ -829,11 +829,11 @@ for (sample in samples[2]){
 
 ##### Ref atlas comparison 
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/prostate_cancer/total_integration/")
+wd <- paste0(FIGS_ROOT, "/prostate_cancer/total_integration/")
 samples <- c("pt10", "pt20")
 spls <- list()
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/prostate_cancer/HD/", sample, "_visHD.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/prostate_cancer/HD/", sample, "_visHD.rds"))
     vis <- SubsetSTData(vis, expression = resolution == "016um") # use this resolution 
 
     ## Map w/ semla NNLS
@@ -872,8 +872,8 @@ ggsave(paste0(wd, "map/", "ref_atlas_HD.jpg"), final_plot, height = 5*length(sam
 
 ## Distribution of patients across labels
 ```{r}
-obj <- readRDS(paste0(DATA_ROOT, "/processed_data/prostate_cancer/integrated/integrated_all_epithelial.rds"))
-wd <- paste0(DATA_ROOT, "/figs/prostate_cancer/epithelial/")
+obj <- readRDS(paste0(DATA_ROOT, "/r_objects/prostate_cancer/integrated/integrated_all_epithelial.rds"))
+wd <- paste0(FIGS_ROOT, "/prostate_cancer/epithelial/")
 ```
 ```{r}
 obj <- subset(obj, subset = seuratAnnotation_major %in% c("Epithelial"))

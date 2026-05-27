@@ -37,8 +37,8 @@ library(Matrix)
 
 ### Settings 
 ```{r}
-rootObj <- paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/cross_patient/")
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/")
+rootObj <- paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/cross_patient/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/")
 if (!dir.exists(rootObj)) {
     dir.create(rootObj, recursive = TRUE)
 }
@@ -63,7 +63,7 @@ int.all <- readRDS(paste0(rootObj, "SIMPlex_breast_allSamples.rds"))
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds"))
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds"))
     if (file.exists(output_path)) {
         spls[[sample]] <- readRDS(output_path)
     }
@@ -72,7 +72,7 @@ for (sample in samples) {
 
 ## Integrate CAFs only 
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/subtype_annotation/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/subtype_annotation/")
 merged.cafs <- subset(int.all, subset = seuratAnnotation_major == "CAFs")
 wd <- paste0(wd, "CAFs/")
 if (!dir.exists(wd)) {
@@ -508,7 +508,7 @@ img_filename <- "patient_combined_subpops_cafs_vis55.jpg"
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
     if (patient_specific == TRUE){
         ref <- subset(int.all, subset = sample == !!sample)
     } else {
@@ -565,7 +565,7 @@ int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
     if (file.exists(output_path)) {
         spls[[sample]] <- readRDS(output_path)
     }
@@ -574,7 +574,7 @@ for (sample in samples) {
 
 ## Integrate Epithelial only 
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/subtype_annotation/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/subtype_annotation/")
 wd <- paste0(wd, "Epithelial/")
 merged.epi <- subset(int.all, subset = seuratAnnotation_major == "Epithelial")
 if (!dir.exists(wd)) {
@@ -924,7 +924,7 @@ img_filename <- "patient_specific_subpops_epithelial_vis55.jpg"
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
     patient_ID <- sub("_.*$", "", sample)
     if (patient_specific == TRUE){
         ref <- subset(int.all, subset = patient_ID == !!patient_ID)
@@ -982,7 +982,7 @@ int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
     if (file.exists(output_path)) {
         spls[[sample]] <- readRDS(output_path)
     }
@@ -991,7 +991,7 @@ for (sample in samples) {
 
 ## Integrate Immune only 
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/subtype_annotation/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/subtype_annotation/")
 wd <- paste0(wd, "Immune/")
 merged.im <- subset(int.all, subset = seuratAnnotation_major %in% c("T-cells", "B-cells", "Myeloid", "Plasmablasts"))
 if (!dir.exists(wd)) {
@@ -1521,7 +1521,7 @@ img_filename <- "patient_specific_subpops_immune_vis55_2000varfeatures.jpg"
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
     patient_ID <- sub("_.*$", "", sample)
     if (patient_specific == TRUE){
         ref <- subset(int.all, subset = patient_ID == !!patient_ID)
@@ -1575,7 +1575,7 @@ ggsave(paste0(wd, "map/", img_filename), final_plot, height = 5*length(samples),
 
 # Settings
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/final_subpopulations/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/final_subpopulations/")
 ```
 
 ## load 
@@ -1619,7 +1619,7 @@ img_filename <- "patSpec_allSubpops_vis55_2000varfeatures.jpg"
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
     patient_ID <- sub("_.*$", "", sample)
     if (patient_specific == TRUE){
         ref <- subset(int.all, subset = patient_ID == !!patient_ID)
@@ -2294,7 +2294,7 @@ for (lin in lineages) {
 
 #### manually plot umaps 
 ```{r}
-spl <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/cross_patient/caf_subpop_analysis.rds"))
+spl <- readRDS(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/cross_patient/caf_subpop_analysis.rds"))
 Idents(spl) <- "seurat_clusters"
 populations <- names(categories)[sapply(categories, function(x) x[2] == "caf")]
 # Ensure populations match the Idents, accounting for underscores/dashes
@@ -2333,7 +2333,7 @@ ggsave(
 # Network visualization of subpopulation compartments
 ```{r}
 library(igraph)
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/final_subpopulations/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/final_subpopulations/")
 int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
 mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
 spls <- list()
@@ -2898,7 +2898,7 @@ ggsave(
 # load 
 ```{r}
 library(igraph)
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/ref_atlas_comparisons/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/ref_atlas_comparisons/")
 int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
 mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations.rds"))
 bc_atlas <- readRDS(paste0(DATA_ROOT, "/external_references/BC_atlas/miniatlas.rds"))
@@ -3425,7 +3425,7 @@ we go back to previous code and set "recolored" to TRUE
 ### plot diff references to HD data for patient 5 
 
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/HD/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/HD/")
 ```
 
 ```{r}
@@ -3435,7 +3435,7 @@ simp <- subset(int.all, subset = patient_ID == patient)
 bc_atlas$subpopulation <- bc_atlas$celltype_subset
 refs <- list(bc_atlas = bc_atlas, SIMPlex = simp)
 
-vis <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/HD/patient5_HD/patient5_HD_spatial.rds"))
+vis <- readRDS(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/HD/patient5_HD/patient5_HD_spatial.rds"))
 subset48 <- SubsetSTData(vis, spots = grep("s_048um", colnames(vis), value = TRUE)) 
     DefaultAssay(subset48) <- "Spatial"
     subset48 <- subset48 |>
@@ -3550,10 +3550,10 @@ labels in patient 4
 
 ## load 
 ```{r}
-int.all <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/cross_patient/integrated_all_subpopulations.rds"))
+int.all <- readRDS(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/cross_patient/integrated_all_subpopulations.rds"))
 mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
-rootObj <- paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/cross_patient/")
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/pat4_invasive_dcis_composition/")
+rootObj <- paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/cross_patient/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/pat4_invasive_dcis_composition/")
 
 ## pat4 only obj
 sample <- "patient4_55um"
@@ -3711,7 +3711,7 @@ for (radial_distance_col in c("r_dist_dcis", "r_dist_invasive")) {
 
 # Exploration of patient interesting population gene signatures
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/deg_interesting_celltypes/")   
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/deg_interesting_celltypes/")   
 ```
 
 ```{r}
@@ -3810,8 +3810,8 @@ The border like profile of apCAFs is also worth investigating in HD.
 # Spatially informed ligand receptor analysis iCAF secretory and luminal progenitors transitional
 ```{r}
 library(celltalker)
-int.all <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/cross_patient/integrated_all_subpopulations.rds"))
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/ligand_receptor/")
+int.all <- readRDS(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/cross_patient/integrated_all_subpopulations.rds"))
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/ligand_receptor/")
 ```
 
 #### patient 4 only 
@@ -3833,7 +3833,7 @@ interactions <- celltalk(input_object=pat4_sn,
 
 ### spatially informed filtering
 ```{r}
-mtx <- read.csv(paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/final_subpopulations/correlation/patient4_55um_correlation_matrix.csv", row.names = 1, check.names = FALSE)
+mtx <- read.csv(paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/final_subpopulations/correlation/patient4_55um_correlation_matrix.csv", row.names = 1, check.names = FALSE)
 mtx <- pmax(mtx, t(mtx)) # get bidirectional correlation
 spatial_long <- as.data.frame(as.table(as.matrix(mtx))) %>%
   setNames(c("cell_type1", "cell_type2", "spatial_corr")) 
@@ -3954,7 +3954,7 @@ dev.off()
 
 # Check interesting genes in Visium data
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/interesting_genes/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/interesting_genes/")
 mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
 ```
 
@@ -4081,14 +4081,14 @@ ggsave(
 
 # Looking for FDCs
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/fdc_frc_analysis/")
-int.all <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/cross_patient/integrated_all_subpopulations.rds"))
-mergedVis <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/cross_patient/merged_visium_deconSubpopulations_simplex.rds"))
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/fdc_frc_analysis/")
+int.all <- readRDS(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/cross_patient/integrated_all_subpopulations.rds"))
+mergedVis <- readRDS(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/cross_patient/merged_visium_deconSubpopulations_simplex.rds"))
 ```
 
 ### FDC
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_cellStateLevel/fdc/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/fdc/")
 pos_genes <- c("CXCL13", "FDCSP", "CR1", "CR2", "SRGN", "PAPPA", "MFGE8", "CLU", "SLC1A2")
 neg_genes <- c("PTPRC", "KRT18", "PECAM1", "ADIPOQ", "CD79A", "CD3E", "LYZ", "EPCAM", "MS4A1")
 genes <- c(pos_genes, neg_genes)

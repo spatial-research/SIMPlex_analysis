@@ -234,7 +234,7 @@ DimPlot(snMB, reduction = "umap", group.by = "tax4", pt.size = 1) +
 Idents(snMB) <- snMB$subclass
 sn.markers.subclass <- FindAllMarkers(snMB, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, verbose = FALSE)
 sn.markers.subclass %>% group_by(cluster) %>% slice_max(n = 5, order_by = avg_log2FC)
-write.csv(sn.markers.subclass, paste0(DATA_ROOT, "/processed_data/mouse_brain/top5_markers_subclass.csv"), row.names = FALSE)
+write.csv(sn.markers.subclass, paste0(DATA_ROOT, "/r_objects/mouse_brain/top5_markers_subclass.csv"), row.names = FALSE)
 
 AllMarkers.F <- sn.markers.subclass %>%
   filter(p_val_adj < 0.01)
@@ -266,7 +266,7 @@ DotPlot(snMB,
 Idents(snMB) <- snMB$tax4
 sn.markers.tax4 <- FindAllMarkers(snMB, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, verbose = FALSE)
 sn.markers.tax4 %>% group_by(cluster) %>% slice_max(n = 5, order_by = avg_log2FC)
-write.csv(sn.markers.tax4, paste0(DATA_ROOT, "/processed_data/mouse_brain/top5_markers_tax4.csv"), row.names = FALSE)
+write.csv(sn.markers.tax4, paste0(DATA_ROOT, "/r_objects/mouse_brain/top5_markers_tax4.csv"), row.names = FALSE)
 
 AllMarkers.F <- sn.markers.tax4 %>%
   filter(p_val_adj < 0.01)
@@ -325,7 +325,7 @@ Cell_Highlight_Plot(seurat_object = snMB, cells_highlight = cells,
 Idents(snMB) <- snMB$allen_cortex
 sn.markers.allen <- FindAllMarkers(snMB, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, verbose = FALSE)
 sn.markers.allen %>% group_by(cluster) %>% slice_max(n = 5, order_by = avg_log2FC)
-write.csv(sn.markers.allen, paste0(DATA_ROOT, "/processed_data/mouse_brain/top5_markers_allen.csv"), row.names = FALSE)
+write.csv(sn.markers.allen, paste0(DATA_ROOT, "/r_objects/mouse_brain/top5_markers_allen.csv"), row.names = FALSE)
 
 AllMarkers.F <- sn.markers.allen %>%
   filter(p_val_adj < 0.01)
@@ -360,7 +360,7 @@ DotPlot(snMB_subset,
 ## Save objects
 
 ```{r save}
-saveRDS(snMB.filt_singlet, file = paste0(DATA_ROOT, "/processed_data/mouse_brain/snRNA.rds"))
+saveRDS(snMB.filt_singlet, file = paste0(DATA_ROOT, "/r_objects/mouse_brain/snRNA.rds"))
 ```
 
 ## Session info

@@ -13,13 +13,13 @@ SIMPlex (**S**ingle-section **I**ntegrated **M**ulti-layer **P**rofiling) genera
 ```
 SIMPlex_analysis/
 ├── README.md
-├── config.R                       # DATA_ROOT, HDF5 path, shared palettes — edit once per machine
-├── .gitignore                     # ignores data/ (heavy) and all generated outputs
+├── config.R                       # DATA_ROOT, FIGS_ROOT, HDF5 path, shared palettes — edit once per machine
+├── .gitignore                     # gitignores data files by extension and figs/
 ├── environment/
 │   ├── environment.yml            # main R env (Seurat v5, semla, harmony, RcppML, singlet, …)
 │   ├── installed_packages.csv     # complete R package manifest with versions
 │   └── renv.lock                  # renv lockfile (exact dependency graph)
-├── scripts/                       # all 7 analysis Rmd files
+├── scripts/                       # all 8 analysis Rmd files
 │   ├── qc_doubletRemoval.rmd
 │   ├── breast_cancer/
 │   │   ├── annotation_majorLevel.rmd
@@ -32,19 +32,21 @@ SIMPlex_analysis/
 │       ├── sn_analysis.Rmd
 │       └── spatial_analysis.Rmd
 ├── resources/                     # git-tracked small CSVs (~20 MB total) — metadata, annotations
-│   ├── patient_metadata.csv
+│   ├── sample_metadata.csv
 │   └── breast_cancer/
 │       ├── CTA/                   # patient3–9 computational tissue annotation (Li et al. 2025)
 │       ├── visium_histpathology/  # patient1, patient3–9 pathologist spot annotations
 │       └── xenium/                # gene-group definitions for patient4 Xenium panel
-├── data/                          # Heavy data lives here at runtime; only PLACEHOLDER.md per subdir is git-tracked
-│   ├── processed_data/PLACEHOLDER.md      # points to KTH Data Repository for the deposited R objects (~37 GB)
-│   ├── raw_data/<cohort>/PLACEHOLDER.md   # FASTQs + H&E images (deposited upon publication)
-│   ├── spaceranger/<cohort>/PLACEHOLDER.md
-│   ├── cellranger/<cohort>/PLACEHOLDER.md
-│   ├── cellbender/<cohort>/PLACEHOLDER.md
-│   ├── xenium/<cohort>/PLACEHOLDER.md
-│   └── external_references/PLACEHOLDER.md # download URLs for public atlases (Wu BC, Linnarsson, Allen, Cords, snPATHO, …)
+├── data/                          # Heavy data root — directory structure git-tracked, files gitignored
+│   ├── README.md                  # points to KTH Data Repository DOI
+│   ├── r_objects/                 # KTH-deposited R objects (~37 GB) — see r_objects/PLACEHOLDER.md
+│   ├── external_references/       # Public atlases (Wu BC, Linnarsson, Allen, Cords, snPATHO, …)
+│   ├── spaceranger/               # SpaceRanger outputs (Visium 55 µm, HD, mouse brain)
+│   ├── cellranger/                # CellRanger snRNA-seq outputs
+│   ├── cellbender/                # CellBender-denoised h5 matrices
+│   ├── raw_data/                  # FASTQs + H&E images (deposited upon publication)
+│   └── xenium/                    # Full Xenium Analyzer outputs
+├── figs/                          # Generated figures (gitignored) — written by every script
 └── docs/
     ├── script_to_figure_map.md    # detailed script ↔ figure mapping with manuscript callouts
     └── data_availability.md       # public DOI, raw-data status, external-reference download instructions
@@ -84,9 +86,9 @@ See `docs/script_to_figure_map.md` for a per-figure narrative.
 | patient10_55um | patient10 | Visium 55 µm (fresh-frozen, 18 µm) | — |
 | pt10_HD | pt10 | Visium HD + snRNA | Prostate cancer |
 | pt20_HD | pt20 | Visium HD + snRNA | Prostate cancer |
-| mouse_brain A, B | — | Visium 12 µm FF + snRNA | Mouse brain |
+| mouse_brain A, B | A, B | Visium 12 µm FF + snRNA | Mouse brain |
 
-Patients 4 and 5 are the deeply multimodal TNBC cases (Visium 55 µm + Visium HD + snRNA + consecutive Xenium). Internal sample IDs map to public patient IDs via `resources/patient_metadata.csv`.
+Patients 4 and 5 are the deeply multimodal TNBC cases (Visium 55 µm + Visium HD + snRNA + consecutive Xenium). Internal sample IDs map to public patient IDs via `resources/sample_metadata.csv`.
 
 ---
 
@@ -138,29 +140,13 @@ HDF5_LIB  <- "/home/m.abreumachado/apps/hdf5/lib/libhdf5_hl.so.200"            #
 
 ### 4. Populate `data/`
 
-`data/` is the heavy-data root. Folder structure is committed via PLACEHOLDER.md files in every subdirectory; the actual contents are gitignored. After cloning a fresh checkout, the directory is empty of data — populate each subdirectory by following its PLACEHOLDER.md:
+`data/` is the heavy-data root. The directory structure is git-tracked; actual data files are gitignored by extension. After cloning a fresh checkout, populate from the KTH deposit (see `data/README.md`).
 
-```bash
-find data -name PLACEHOLDER.md
-```
+The most important step is downloading **`data/r_objects/`** from the [KTH Data Repository (DOI `10.71775/kth.jg1wh-kza40`)](https://datarepository.kth.se/records/jg1wh-kza40) (~37 GB) — that single step lets all `analysis_*.rmd` and `mouse_brain/*.Rmd` scripts run end-to-end.
 
-The most important one is **`data/processed_data/PLACEHOLDER.md`**, which points to the [KTH Data Repository deposit (DOI `10.71775/kth.jg1wh-kza40`)](https://datarepository.kth.se/records/jg1wh-kza40). Download the archive there and unpack on top of `data/processed_data/` (~37 GB) — that single step gets you to a state where all `analysis_*.rmd` and `mouse_brain/*.Rmd` scripts can run end-to-end without re-running upstream QC.
+Generated figures are written to **`figs/`** at the repository root (gitignored).
 
-Layout:
-
-```
-data/
-├── raw_data/                   # FASTQs + H&E images (deposited upon publication)
-├── spaceranger/                # SpaceRanger outputs (Visium 55 µm, HD, mouse brain)
-├── cellranger/                 # CellRanger snRNA-seq outputs (awaiting collaborators)
-├── cellbender/                 # CellBender-denoised h5 matrices (input to qc_doubletRemoval.rmd)
-├── xenium/                     # Full Xenium Analyzer outputs (also under processed_data/breast_cancer/xenium/)
-├── external_references/        # Public atlases (Wu BC, Linnarsson, Allen, Cords CAF, snPATHO, 10k mouse forebrain, PCa atlas)
-├── processed_data/             # KTH-deposited R objects + processed CSVs (~37 GB)
-└── figs/                       # Generated by every script under figs/<provenance>/<analysis>/
-```
-
-See `docs/data_availability.md` for the full inventory of what each PLACEHOLDER points to and how to obtain each missing piece.
+See `docs/data_availability.md` for the full inventory and external-reference download instructions.
 
 ### 5. Run the pipeline
 

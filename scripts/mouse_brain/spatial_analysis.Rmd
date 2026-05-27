@@ -92,7 +92,7 @@ se_filtered <- se_filtered |>
 # With label transfer annotations
 ```{r import_sn}
 #SIMPlex label transfer
-snMB <- readRDS(paste0(DATA_ROOT, "/processed_data/mouse_brain/snRNA.rds"))
+snMB <- readRDS(paste0(DATA_ROOT, "/r_objects/mouse_brain/snRNA.rds"))
 ```
 
 ## Normalize data and find variable features

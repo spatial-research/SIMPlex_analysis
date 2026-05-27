@@ -36,8 +36,8 @@ options(browser = "false") # to prevent an error due to remote browser
 
 ### Settings 
 ```{r}
-rootObj <- paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/cross_patient/")
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_majorLevel/")
+rootObj <- paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/cross_patient/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_majorLevel/")
 if (!dir.exists(rootObj)) {
     dir.create(rootObj, recursive = TRUE)
 }
@@ -62,8 +62,8 @@ format_k <- function(x) {
 
 ### Merge datasets
 ```{r}
-data_path <- paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample")
-patient_csv <- read.csv(here::here("resources/patient_metadata.csv"), sep = ";")
+data_path <- paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/per_sample")
+patient_csv <- read.csv(here::here("resources/sample_metadata.csv"), sep = ";")
 included_samples <- c(
     "patient1_55um", 
     "patient2_55um", 
@@ -150,7 +150,7 @@ plots <- lapply(unique(qc_medians$feature), function(feat) {
 p <- wrap_plots(plots, ncol = 2)
 
 ggsave(
-    filename = paste0(DATA_ROOT, "/figs/breast_cancer/analysis_majorLevel/QC_metrics_postThreshold.pdf"), # modify accordingly
+    filename = paste0(FIGS_ROOT, "/breast_cancer/analysis_majorLevel/QC_metrics_postThreshold.pdf"), # modify accordingly
     plot = p,
     width = 8,
     height = 5
@@ -165,7 +165,7 @@ merged <- subset(merged, subset = nFeature_RNA > 200)
 
 #### Integrate all 
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_majorLevel/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_majorLevel/")
 set.seed(1)
 merged <- merged %>%
   NormalizeData() %>%
@@ -427,7 +427,7 @@ DefaultAssay(int.all) <- "RNA"
 int.all <- int.all |>
 FindVariableFeatures(nfeatures = 2000)
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
 
     ## Map w/ semla NNLS
     ident <- "seuratAnnotation_major" # ident in the reference to use for mapping 
@@ -665,7 +665,7 @@ save 55um objects, but HD we save the decon as csv since the objects are too lar
 ```{r}
 assays <- c("patspec_major_map", "control_major_map", "garvan_major_map", "simplex_major_map")
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/")
     if (grepl("HD", sample)) {
         for (assay in assays) {
             DefaultAssay(spls[[sample]]) <- assay
@@ -686,7 +686,7 @@ samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
     if (!grepl("HD", sample)) {
-        output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+        output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
         if (file.exists(output_path)) {
             spls[[sample]] <- readRDS(output_path)
         }
@@ -773,7 +773,7 @@ samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
     if (!grepl("HD", sample)) {
-        output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+        output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
         if (file.exists(output_path)) {
             spls[[sample]] <- readRDS(output_path)
         }
@@ -1226,7 +1226,7 @@ ggsave(
 ```{r}
 saveRDS(mergedVis, file = paste0(rootObj, "/VISIUM_breast_allSamples.rds"))
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
     saveRDS(spls[[sample]], file = output_path)
 }
 ```
@@ -1238,7 +1238,7 @@ int.all <- readRDS(paste0(rootObj, "SIMPlex_breast_allSamples.rds"))
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
     if (file.exists(output_path)) {
         spls[[sample]] <- readRDS(output_path)
     }
@@ -1250,7 +1250,7 @@ for (sample in samples) {
 ```{r}
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
     DefaultAssay(int.all) <- "RNA"
 
     ## Map w/ semla NNLS
@@ -1305,7 +1305,7 @@ if (length(hd_sample_plots) > 0) {
 ```{r}
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 for (sample in samples){
-    vis <- readRDS(paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
+    vis <- readRDS(paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_spatial.rds"))
     DefaultAssay(int.all) <- "RNA"
 
     ## Map w/ semla NNLS
@@ -1358,7 +1358,7 @@ if (length(hd_sample_plots) > 0) {
 ### save progress
 ```{r}
 for (sample in samples){
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
     saveRDS(spls[[sample]], file = output_path)
 }
 ```
@@ -1369,7 +1369,7 @@ int.all <- readRDS(paste0(rootObj, "SIMPlex_breast_allSamples.rds"))
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
     if (file.exists(output_path)) {
         spls[[sample]] <- readRDS(output_path)
     }
@@ -1539,7 +1539,7 @@ for (sample in samples_pathAnno){
 #### save progress
 ```{r}
 for (sample in samples_pathAnno){
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
     saveRDS(spls[[sample]], file = output_path)
 }
 ```
@@ -1550,7 +1550,7 @@ int.all <- readRDS(paste0(rootObj, "SIMPlex_breast_allSamples.rds"))
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
     if (file.exists(output_path)) {
         spls[[sample]] <- readRDS(output_path)
     }
@@ -1946,7 +1946,7 @@ int.all <- readRDS(paste0(rootObj, "SIMPlex_breast_allSamples.rds"))
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
     if (file.exists(output_path)) {
         spls[[sample]] <- readRDS(output_path)
     }
@@ -2253,8 +2253,8 @@ infoTable <- data.frame(
   sample_id = sample
 )
 se.hd <- ReadVisiumData(infoTable)
-dir.create(paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/HD/"), sample, "_visHD/"), recursive = TRUE, showWarnings = FALSE)
-saveRDS(se.hd, paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/HD/"), sample, "_visHD/", sample, "_visHD.rds"))
+dir.create(paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/HD/"), sample, "_visHD/"), recursive = TRUE, showWarnings = FALSE)
+saveRDS(se.hd, paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/HD/"), sample, "_visHD/", sample, "_visHD.rds"))
 }
 ```
 
@@ -2269,7 +2269,7 @@ simp <- subset(int.all, subset = patient_ID == patient)
 bc_atlas$major_celltypes <- bc_atlas$celltype_major
 refs <- list(bc_atlas = bc_atlas, SIMPlex = simp, control = control)
 
-vis <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/HD/patient5_HD/patient5_HD_spatial.rds"))
+vis <- readRDS(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/HD/patient5_HD/patient5_HD_spatial.rds"))
 subset48 <- SubsetSTData(vis, spots = grep("s_048um", colnames(vis), value = TRUE)) 
     DefaultAssay(subset48) <- "Spatial"
     subset48 <- subset48 |>
@@ -2291,7 +2291,7 @@ for (res in ress) {
     }
     subRes <- SubsetSTData(vis, spots = barcodes_in_range)
     ## quick check of the frame
-    ggsave(paste0(DATA_ROOT, "/figs/breast_cancer/analysis_majorLevel/HD_decon_comparison/patient5_area.jpg"), MapFeatures(subRes, features = "nFeature_Spatial", override_plot_dims = TRUE, pt_size = 0.5, shape = "tile"))
+    ggsave(paste0(FIGS_ROOT, "/breast_cancer/analysis_majorLevel/HD_decon_comparison/patient5_area.jpg"), MapFeatures(subRes, features = "nFeature_Spatial", override_plot_dims = TRUE, pt_size = 0.5, shape = "tile"))
     ## Map w/ semla NNLS
     ident <- "major_celltypes" # ident in the reference to use for mapping 
     celltype <- paste0("major_map_re", res) # name of the mapping to assign to the visium object
@@ -2381,7 +2381,7 @@ int.all <- readRDS(paste0(rootObj, "SIMPlex_breast_allSamples.rds"))
 samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
-    output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+    output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
     if (file.exists(output_path)) {
         spls[[sample]] <- readRDS(output_path)
     }
@@ -2497,7 +2497,7 @@ samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
 spls <- list()
 for (sample in samples) {
     if (!grepl("HD", sample)) {
-        output_path <- paste0(paste0(DATA_ROOT, "/processed_data/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
+        output_path <- paste0(paste0(DATA_ROOT, "/r_objects/breast_cancer/visium/55um/", sample, "/", sample, "_3decon.rds")
         if (file.exists(output_path)) {
             spls[[sample]] <- readRDS(output_path)
         }
@@ -2573,7 +2573,7 @@ ggsave(paste0(wd, "final_plots/deconvolution_proportions_soft_deconv_dodge.pdf")
 ### get QC metrics
 
 ```{r}
-int.all <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/cross_patient/SIMPlex_breast_allSamples.rds"))
+int.all <- readRDS(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/cross_patient/SIMPlex_breast_allSamples.rds"))
 ```
 
 ```{r}
@@ -2626,7 +2626,7 @@ plots <- lapply(unique(qc_medians$feature), function(feat) {
 p <- wrap_plots(plots, ncol = 2)
 
 ggsave(
-    filename = paste0(DATA_ROOT, "/figs/breast_cancer/suppl/QC_metrics.pdf"),
+    filename = paste0(FIGS_ROOT, "/breast_cancer/suppl/QC_metrics.pdf"),
     plot = p,
     width = 8,
     height = 5
@@ -2637,20 +2637,20 @@ ggsave(
 
 #### load 
 ```{r}
-qc <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/cross_patient/SIMPlex_breast_allSamples.rds"))
+qc <- readRDS(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/cross_patient/SIMPlex_breast_allSamples.rds"))
 qc$sample <- paste0("BC_", qc$sample)
-ff <- readRDS(paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/other/patient10_seuratAnnotation.rds"))
+ff <- readRDS(paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/other/patient10_seuratAnnotation.rds"))
 ff$sample[ff$sample == "BC_1.1"] <- "BC_FreshFrozen_rep1"
 ff$sample[ff$sample == "BC_1.2"] <- "BC_FreshFrozen_rep2"
-prost1 <- readRDS(paste0(DATA_ROOT, "/processed_data/prostate_cancer/single_nuclei/pt10_HD_seuratAnnotation.rds"))
+prost1 <- readRDS(paste0(DATA_ROOT, "/r_objects/prostate_cancer/single_nuclei/pt10_HD_seuratAnnotation.rds"))
 prost1$sample[prost1$sample == "pt10_ap5_5"] <- "Prostate_HD_pat10"
-prost2 <- readRDS(paste0(DATA_ROOT, "/processed_data/prostate_cancer/single_nuclei/pt20_HD_seuratAnnotation.rds"))
+prost2 <- readRDS(paste0(DATA_ROOT, "/r_objects/prostate_cancer/single_nuclei/pt20_HD_seuratAnnotation.rds"))
 prost2$sample[prost2$sample == "pt20_p2_2"] <- "Prostate_HD_pat20"
 snPatho <- readRDS(paste0(DATA_ROOT, "/external_references/snPATHO/4066_snPatho.rds"))
 snPatho <- subset(snPatho, subset = sample_id == "4066FFPE") # select only FFPE sample
 snPatho$sample <- snPatho$sample_id
 snPatho$sample[snPatho$sample == "4066FFPE"] <- "snPatho_FFPE"
-mouse <- readRDS(paste0(DATA_ROOT, "/processed_data/mouse_brain/snRNA.rds"))
+mouse <- readRDS(paste0(DATA_ROOT, "/r_objects/mouse_brain/snRNA.rds"))
 # mouse$sample[mouse$sample == "MB_2_simplex"] <- "Mouse_Brain"
 tenx <- Read10X_h5(paste0(DATA_ROOT, "/external_references/10x_BC_FFPE/320k_scFFPE_16-plex_GEM-X_FLEX_BreastCancer1_BC7-8_count_sample_filtered_feature_bc_matrix.h5"))
 tenx <- CreateSeuratObject(counts = tenx)
@@ -2742,7 +2742,7 @@ plots <- lapply(unique(qc_medians$feature), function(feat) {
 p <- wrap_plots(plots, ncol = 1)
 
 ggsave(
-    filename = paste0(DATA_ROOT, "/figs/breast_cancer/suppl/qc_SIMPLEX_prostate.pdf"), # modify accordingly
+    filename = paste0(FIGS_ROOT, "/breast_cancer/suppl/qc_SIMPLEX_prostate.pdf"), # modify accordingly
     plot = p,
     width = 4,
     height = 12
@@ -2800,7 +2800,7 @@ p <- ggplot(counts_df, aes(x = sample, y = N)) +
 
 # Save plot
 ggsave(
-    filename = paste0(DATA_ROOT, "/figs/breast_cancer/suppl/breast_nuclei.pdf"),
+    filename = paste0(FIGS_ROOT, "/breast_cancer/suppl/breast_nuclei.pdf"),
     plot = p,
     width = 6,
     height = 4
@@ -2809,7 +2809,7 @@ ggsave(
 
 ## redo some umaps 
 ```{r}
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/analysis_majorLevel/final_plots/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_majorLevel/final_plots/")
 ggsave(
     filename = paste0(wd, "celltype_umap_remake.pdf"),
     plot = DimPlot(qc, reduction = "umap", group.by = "seuratAnnotation_major", label = TRUE, alpha = 1, pt.size = 0.001, cols = colsCelltype) +

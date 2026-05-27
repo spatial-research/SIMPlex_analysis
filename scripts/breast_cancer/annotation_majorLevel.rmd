@@ -35,10 +35,10 @@ library(heatmap3)
 Here we label transfer based on Wu. et al 2021, checking for marker genes for lineages 
 
 ```{r}
-objFile <- paste0(DATA_ROOT, "/processed_data/breast_cancer/single_nuclei/per_sample/patient9_55um/patient9_55um.rds"
+objFile <- paste0(DATA_ROOT, "/r_objects/breast_cancer/single_nuclei/per_sample/patient9_55um/patient9_55um.rds"
 obj <- readRDS(objFile)
 ref <- readRDS(paste0(DATA_ROOT, "/external_references/BC_atlas/miniatlas.rds"))
-wd <- paste0(DATA_ROOT, "/figs/breast_cancer/annotation/patient9_55um/"
+wd <- paste0(FIGS_ROOT, "/breast_cancer/annotation/patient9_55um/"
 if (!dir.exists(wd)) {
     dir.create(wd, recursive = TRUE)
 }

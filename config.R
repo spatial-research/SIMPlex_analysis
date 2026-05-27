@@ -11,9 +11,10 @@
 # expected at DATA_ROOT. The default below points at `data/` inside this
 # repository (gitignored). Override if your data lives elsewhere.
 #
-# Note: small git-tracked metadata (patient_metadata.csv, CTA, visium_histpathology,
+# Note: small git-tracked metadata (sample_metadata.csv, CTA, visium_histpathology,
 # Xenium gene_groups) lives in `resources/` (loaded directly via here::here()).
 DATA_ROOT <- here::here("data")
+FIGS_ROOT <- here::here("figs")
 
 # ---- 2. HDF5 library -------------------------------------------------------
 # Some Seurat/semla operations require a specific HDF5 build. Set HDF5_LIB to

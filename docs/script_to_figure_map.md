@@ -66,7 +66,7 @@ Detailed mapping of each analysis script's outputs to manuscript figures. Run sc
 
 ## Intermediate file flow
 
-The scripts share intermediate `.rds` files. Within `data/processed_data/breast_cancer/`:
+The scripts share intermediate `.rds` files. Within `data/r_objects/breast_cancer/`:
 
 ```
 qc_doubletRemoval.rmd      → single_nuclei/per_sample/<patient>/<sample>_noDoublets.rds
