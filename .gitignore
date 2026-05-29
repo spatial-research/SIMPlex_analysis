@@ -1,8 +1,7 @@
 # ---- data/ ------------------------------------------------------------------
 # The data/ directory structure and .md files are git-tracked.
 # Actual data files (R objects, matrices, images, pipeline outputs) are ignored.
-data/**/*
-!data/**/
+data/*
 !data/**/*.md
 !data/**/*.html
 
