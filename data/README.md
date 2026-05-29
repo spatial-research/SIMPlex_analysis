@@ -12,8 +12,8 @@ Download the archive and unpack on top of `data/r_objects/` (~37 GB). That singl
 
 ```
 data/
-├── r_objects/          # KTH-deposited R objects — see r_objects/PLACEHOLDER.md
-├── external_references/# Public reference atlases — see external_references/PLACEHOLDER.md
+├── r_objects/          # KTH-deposited R objects — see r_objects/README.md
+├── external_references/# Public reference atlases — see external_references/README.md
 ├── spaceranger/        # SpaceRanger outputs (Visium 55 µm, HD, mouse brain)
 ├── cellranger/         # CellRanger snRNA-seq outputs
 ├── cellbender/         # CellBender-denoised h5 matrices

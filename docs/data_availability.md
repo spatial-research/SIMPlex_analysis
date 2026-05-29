@@ -1,6 +1,6 @@
 # Data availability and external references
 
-Mirrors the manuscript's "Code and Data availability" section (page 16). Run alongside the PLACEHOLDER.md files in `data/<subdir>/` to verify your local copy is complete.
+Mirrors the manuscript's "Code and Data availability" section (page 16). Run alongside the README.md files in `data/<subdir>/` to verify your local copy is complete.
 
 ## Deposited processed data
 

@@ -39,7 +39,7 @@ SIMPlex_analysis/
 │       └── xenium/                # gene-group definitions for patient4 Xenium panel
 ├── data/                          # Heavy data root — directory structure git-tracked, files gitignored
 │   ├── README.md                  # points to KTH Data Repository DOI
-│   ├── r_objects/                 # KTH-deposited R objects (~37 GB) — see r_objects/PLACEHOLDER.md
+│   ├── r_objects/                 # KTH-deposited R objects (~37 GB) — see r_objects/README.md
 │   ├── external_references/       # Public atlases (Wu BC, Linnarsson, Allen, Cords, snPATHO, …)
 │   ├── spaceranger/               # SpaceRanger outputs (Visium 55 µm, HD, mouse brain)
 │   ├── cellranger/                # CellRanger snRNA-seq outputs

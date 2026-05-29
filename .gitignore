@@ -1,21 +1,10 @@
 # ---- data/ ------------------------------------------------------------------
 # The data/ directory structure and .md files are git-tracked.
 # Actual data files (R objects, matrices, images, pipeline outputs) are ignored.
-data/**/*.rds
-data/**/*.h5
-data/**/*.loom
-data/**/*.zarr.zip
-data/**/*.tif
-data/**/*.tiff
-data/**/*.png
-data/**/*.jpg
-data/**/*.jpeg
-data/**/*.html
-data/**/*.csv
-data/**/*.json
-data/**/*.xenium
-data/**/*.gz
-data/**/*.tar
+data/**/*
+!data/**/
+!data/**/*.md
+!data/**/*.html
 
 # ---- figs/ ------------------------------------------------------------------
 # Directory structure and README.md files are git-tracked.
