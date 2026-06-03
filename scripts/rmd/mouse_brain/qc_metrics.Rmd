@@ -1,0 +1,187 @@
+---
+title: "SIMPlex Mouse Brain — Visium spatial and snRNA-seq QC metrics"
+subtitle: "Manuscript figures: Extended Data Fig. 1b"
+author: "Mengxiao He"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r config, include=FALSE}
+# DATA_ROOT, HDF5 library, palettes — single source of truth for paths.
+source(here::here("config.R"))
+```
+
+## Load libraries
+
+Load libraries
+
+```{r package, message='hide', results='hold'}
+suppressMessages(require(semla))
+suppressMessages(require(Seurat))
+suppressMessages(require(SeuratDisk))
+suppressMessages(require(Matrix))
+suppressMessages(require(patchwork))
+suppressMessages(require(ggplot2))
+suppressMessages(require(magick))
+suppressMessages(require(scCustomize))
+suppressMessages(require(tidyverse))
+suppressMessages(require(ggpubr))
+suppressMessages(require(DoubletFinder))
+```
+
+# Visium
+
+## Load data
+
+```{r loaddata}
+# Load BC Visium samples
+visium.dir <- paste0(SPACERANGER, "/mouse_brain")
+
+samples <- list.files(visium.dir, recursive = TRUE, full.names = TRUE, pattern = 'filtered_feature_bc_matrix.h5')
+
+imgs <- list.files(visium.dir, recursive = TRUE, full.names = TRUE, pattern = 'tissue_hires_image.png')
+
+spotfiles <- list.files(visium.dir, recursive = TRUE, full.names = TRUE, pattern = 'tissue_positions.csv')
+
+json <- list.files(visium.dir, recursive = TRUE, full.names = TRUE, pattern = 'scalefactors_json.json')
+
+section.name <- samples
+section.name <- gsub(paste0(visium.dir, "/"),"", gsub("/filtered_feature_bc_matrix.h5", "", section.name))
+
+infoTable <- tibble(section.name, samples, imgs, spotfiles, json, # Add required columns
+                    sample_id = c("MB 1.1", "MB 1.2")) # Add additional column
+
+se <- ReadVisiumData(infoTable, verbose = FALSE)
+```
+
+## QC
+
+```{r qc_featureplot}
+feature.plot <- MapFeaturesSummary(se, features = "nFeature_Spatial", ncol = 2, subplot_type = "histogram", pt_size = 1.2)
+count.plot <- MapFeaturesSummary(se, features = "nCount_Spatial", ncol = 2, subplot_type = "histogram", pt_size = 1.2)
+
+feature.plot / count.plot
+```
+
+## Vln plots for QC
+
+```{r vlnplotnew}
+se$percent.mt <- PercentageFeatureSet(se, pattern = "^MT-")
+se$percent.ribo <- PercentageFeatureSet(se, pattern = "^RPL|^RPS")
+vln.plot.1 <- VlnPlot(se, features = "nFeature_Spatial", group.by = "sample_id", pt.size = 0) + NoLegend()
+vln.plot.2 <- VlnPlot(se, features ="nCount_Spatial", group.by = "sample_id", pt.size = 0) + NoLegend()
+histo.plot <- ggplot() + 
+  geom_histogram(data = se[[]], aes(nFeature_Spatial), fill = "red", alpha = 0.7, bins = 100) +
+  ggtitle("Unique genes per spot") + geom_vline(xintercept = 500, color = "black", linetype = "dashed")
+vln.plot.1 | vln.plot.2
+histo.plot
+```
+
+## Scatterplot comparison
+
+```{r scatter}
+gene_attr <- do.call(rbind, lapply(unique(se$sample_id), function(i) {
+  umis <- GetAssayData(se, slot = "counts", assay = "Spatial")[, se$sample_id %in% i]
+  gene_attr <- data.frame(gene = rownames(umis),
+                        counts = Matrix::rowSums(umis), 
+                        det_rate = Matrix::rowMeans(umis > 0),
+                        dataset = i)
+}))
+gene_attr$log10_count <- log10(gene_attr$counts + 1)
+
+Log10counts <- spread(data = gene_attr[, c(1, 4, 5)], key = "dataset", value = "log10_count")
+DetRate <- spread(data = gene_attr[, c(1, 3, 4)], key = "dataset", value = "det_rate")
+
+p1 <- ggplot(Log10counts, aes(x=`MB 1.1`, y=`MB 1.2`)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01)+
+  geom_abline(intercept = 0, slope = 1, color = "red")+
+  labs(title="Log_10 counts")
+p2 <- ggplot(DetRate, aes(x=`MB 1.1`, y=`MB 1.2`)) + 
+  geom_point()+
+  geom_smooth(method=lm, )+
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01)+
+  geom_abline(intercept = 0, slope = 1, color = "red")+
+  labs(title="Detection rate")
+
+p1 - p2
+```
+
+## Session info
+```{r session_info}
+sessionInfo()
+```
+
+# Single-nucleus MB
+
+## Load data
+
+```{r loaddata}
+# Load samples
+SIMPlex_snMB.data <- Seurat::Read10X_h5(
+  filename = paste0(CELLRANGER, "/mouse_brain/sample_filtered_feature_bc_matrix.h5"),
+  use.names = T)
+MB_SIMPlex <- CreateSeuratObject(SIMPlex_snMB.data,  project = "SIMPlex")
+MB_SIMPlex$sample <- "MB_2"
+
+#Load 10x ref
+MFB_10x.data <- Seurat::Read10X_h5(
+  filename = paste0(EXT_REFS, "/mouse_forebrain_10x/10k_mouse_forebrain_scFFPE_singleplex_count_sample_filtered_feature_bc_matrix.h5"),
+  use.names = T)
+MFB_10x <- CreateSeuratObject(MFB_10x.data,  project = "SIMPlex")
+MFB_10x$sample <- "MFB_10x"
+
+# Merge
+snMB <- merge(MB_SIMPlex, MFB_10x, add.cell.ids = c("MB_SIMPlex", "MFB_10x"), project = "multi_mod")
+```
+
+## Plot QC
+
+```{r qcplot}
+x <- VlnPlot(snMB, features = "nFeature_RNA", pt.size = 0, group.by = "sample") + NoLegend()
+y <- VlnPlot(snMB, features = "nCount_RNA", pt.size = 0, group.by = "sample", y.max = 100000) + NoLegend()
+x | y
+```
+
+## Scatterplot comparison
+
+```{r scatter}
+gene_attr <- do.call(rbind, lapply(unique(snMB$sample), function(i) {
+  umis <- GetAssayData(snMB, slot = "counts", assay = "RNA")[, snMB$sample %in% i]
+  gene_attr <- data.frame(gene = rownames(umis),
+                        counts = Matrix::rowSums(umis), 
+                        det_rate = Matrix::rowMeans(umis > 0),
+                        dataset = i)
+}))
+gene_attr$log10_count <- log10(gene_attr$counts + 1)
+
+Log10counts <- spread(data = gene_attr[, c(1, 4, 5)], key = "dataset", value = "log10_count")
+DetRate <- spread(data = gene_attr[, c(1, 3, 4)], key = "dataset", value = "det_rate")
+
+p1 <- ggplot(Log10counts, aes(x=MB_SIMPlex, y=MFB_10x)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01)+
+  geom_abline(intercept = 0, slope = 1, color = "red")+
+  labs(title="Log_10 counts")
+
+p2 <- ggplot(DetRate, aes(x=MB_SIMPlex, y=MFB_10x)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01)+
+  geom_abline(intercept = 0, slope = 1, color = "red")+
+  labs(title="Detection rate")
+
+p1 - p2
+```
+
+## Session info
+```{r session_info}
+sessionInfo()
+```
+
+

@@ -1,0 +1,270 @@
+---
+title: "SIMPlex Breast Cancer — per-sample cell type annotation via label transfer from Wu et al. BC atlas"
+subtitle: "Manuscript figures: Extended Data Fig. 4a (per-sample annotation)"
+author: "Marcos Tito Machado"
+output: html_document
+---
+
+```{r config, include=FALSE}
+# DATA_ROOT, HDF5 library, palettes — single source of truth for paths.
+source(here::here("config.R"))
+```
+
+```{r}
+# HDF5 library is loaded by config.R
+library(semla)
+library(tibble)
+library(Seurat)
+# options(Seurat.object.assay.version = "v5")
+library(patchwork)
+library(plotly)
+library(singlet)
+library(RcppML)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(viridis)
+library(pheatmap)
+library(cowplot)
+library(corrplot)
+library(RColorBrewer)
+library(heatmap3)
+```
+
+### explanation
+Here we label transfer based on Wu. et al 2021, checking for marker genes for lineages 
+
+```{r}
+objFile <- paste0(SN_RDS, "/breast_cancer/per_sample/patient9_55um/patient9_55um.rds"
+obj <- readRDS(objFile)
+ref <- readRDS(paste0(EXT_REFS, "/BC_atlas/miniatlas.rds"))
+wd <- paste0(FIGS_ROOT, "/breast_cancer/annotation/patient9_55um/"
+if (!dir.exists(wd)) {
+    dir.create(wd, recursive = TRUE)
+}
+```
+### preplots
+```{r}
+d1 <- DimPlot(obj, reduction = "umap", group.by = "SCT_snn_res.0.1", label = TRUE) + 
+  DimPlot(obj, reduction = "umap", group.by = "SCT_snn_res.0.25", label = TRUE) + 
+  DimPlot(obj, reduction = "umap", group.by = "SCT_snn_res.0.5", label = TRUE)
+d2 <- DimPlot(obj, reduction = "umap", group.by = "SCT_snn_res.0.8", label = TRUE) + 
+  DimPlot(obj, reduction = "umap", group.by = "SCT_snn_res.1", label = TRUE) + 
+  DimPlot(obj, reduction = "umap", group.by = "SCT_snn_res.1.25", label = TRUE)
+pdf(paste0(wd, "umap_cluster_resolutions.pdf"), width = 30, height = 15)
+d1 / d2
+dev.off()
+
+ggsave(
+    filename = paste0(wd, "/bc_atlas_annot.pdf"),
+    plot = DimPlot(obj, group.by = c("celltype_major_adipocyte"), label = TRUE),
+    width = 7,
+    height = 7
+)
+```
+
+```{r}
+cluster_res <- "SCT_snn_res.0.8"
+if (!dir.exists(wd)) {
+  dir.create(wd, recursive = TRUE)
+}
+DefaultAssay(obj) <- "RNA"
+obj <- obj |>
+  NormalizeData() |>
+  FindVariableFeatures() |>
+  ScaleData()
+
+ref <- ref |>
+  NormalizeData() |>
+  FindVariableFeatures() |>
+  ScaleData()
+
+anchors <- FindTransferAnchors(reference = ref, query = obj)
+predictions <- TransferData(
+  anchorset = anchors,
+  refdata = ref$celltype_major,
+  verbose = FALSE
+)
+obj <- AddMetaData(object = obj, metadata = predictions)
+
+annotation_plot <- DimPlot(obj, group.by = "predicted.id", label = TRUE)
+cluster_plot <- DimPlot(obj, group.by = cluster_res, label = TRUE)
+ggsave(
+    filename = paste0(wd, "/clusters_transfer_temp.pdf"),
+    plot = cluster_plot + annotation_plot,
+    width = 20,
+    height = 10
+)
+```
+
+### Find specific cell types
+See if there is a cluster that corresponds well with these markers
+
+#### discover markers 
+```{r}
+Idents(obj) <- cluster_res
+obj$seurat_clusters <- obj[[cluster_res]]
+DefaultAssay(obj) <- "RNA"
+detable <- FindAllMarkers(obj)
+detable %>%
+  group_by(cluster) %>%
+  top_n(n = 7, wt = avg_log2FC) %>%
+  ungroup() %>%
+  distinct(gene, .keep_all = TRUE) -> top
+
+dotplot <- DotPlot(obj, features = top$gene) + 
+    coord_flip() +
+    scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
+ggsave(
+    filename = paste0(wd, "/clusterMarkers.pdf"),
+    plot = dotplot,
+    width = 15,
+    height = 17
+)
+```
+
+##### Known markers 
+```{r}
+ggsave(
+    filename = paste0(wd, "/adipocytes.pdf"),
+    plot = FeaturePlot(obj, features = c("PLIN1", "ADIPOQ", "LEP", "PPARG", "FABP4")),
+    width = 15,
+    height = 15
+)
+##### B-cells
+ggsave(
+    filename = paste0(wd, "/bcells.pdf"),
+    plot = FeaturePlot(obj, features = c("MS4A1", "CD19", "CD79A", "CD79B", "CD22")),
+    width = 15,
+    height = 15
+)
+##### T-cells
+ggsave(
+    filename = paste0(wd, "/tcells.pdf"),
+    plot = FeaturePlot(obj, features = c("CD3D", "CD3E", "CD3G", "CD4", "CD8A", "CD8B", "PDCD1")),
+    width = 15,
+    height = 15
+)
+##### Plasmablasts 
+ggsave(
+    filename = paste0(wd, "/plasmablasts.pdf"),
+    plot = FeaturePlot(obj, features = c("JCHAIN")),
+    width = 15,
+    height = 15
+)
+##### Endothelial
+ggsave(
+    filename = paste0(wd, "/endothelial.pdf"),
+    plot = FeaturePlot(obj, features = c("PECAM1", "CDH5", "VWF")),
+    width = 15,
+    height = 15
+)
+##### PVL
+ggsave(
+    filename = paste0(wd, "/pvl.pdf"),
+    plot = FeaturePlot(obj, features = c("PDGFRB", "MCAM", "CD146", "ACTA2")),
+    width = 15,
+    height = 15
+)
+##### Myeloid 
+ggsave(
+    filename = paste0(wd, "/myeloid.pdf"),
+    plot = FeaturePlot(obj, features = c("CD68", "CD1C")),
+    width = 15,
+    height = 15
+)
+##### CAFs
+ggsave(
+    filename = paste0(wd, "/cafs.pdf"),
+    plot = FeaturePlot(obj, features = c("VIM", "COL1A1", "PDGFRB", "ACTA2")),
+    width = 15,
+    height = 15
+)
+##### Epithelial
+ggsave(
+    filename = paste0(wd, "/epithelial.pdf"),
+    plot = FeaturePlot(obj, features = c("EPCAM", "FOXA1")),
+    width = 15,
+    height = 15
+)
+```
+
+
+## assign labels to desired cluster resolution 
+```{r}
+Idents(obj) <- cluster_res
+obj$seuratAnnotation_major <- obj[[cluster_res]]
+newnames <- c("0" = "Epithelial",
+                "1" = "Myeloid", 
+                "2" = "T-cells", 
+                "3" = "CAFs", 
+                "4" = "T-cells", 
+                "5" = "Endothelial",
+                "6" = "CAFs", 
+                "7" = "Epithelial", 
+                "8" = "Epithelial", 
+                "9" = "Epithelial", 
+                "10" = "Epithelial", 
+                "11" = "Epithelial", 
+                "12" = "T-cells",
+                "13" = "Epithelial",
+                "14" = "CAFs", 
+                "15" = "Myeloid",
+                "16" = "Plasmablasts",
+                "17" = "Myeloid",
+                "18" = "Myeloid",
+                "19" = "Epithelial",
+                "20" = "Adipocytes"
+              )
+obj$seuratAnnotation_major <- recode(obj$seuratAnnotation_major, !!!newnames)
+
+# manually overwrite if some clusters are not good
+        ### Usually PVL are in the same cluster as Endothelial, but discerned by labelTransfer
+obj$seuratAnnotation_major <- as.factor(replace(as.character(obj$seuratAnnotation_major), obj$predicted.id == "PVL", "PVL"))
+        ### B cells seems a tiny cluster within cluster 16, which is plasmablast dominant
+# obj$seuratAnnotation_major <- as.factor(replace(as.character(obj$seuratAnnotation_major), obj$predicted.id == "B-cells", "B-cells"))
+
+annotation_plot <- DimPlot(obj, group.by = "predicted.id", label = TRUE)
+cluster_plot <- DimPlot(obj, group.by = cluster_res, label = TRUE)
+renamed_plot <- DimPlot(obj, group.by = "seuratAnnotation_major", label = TRUE)
+ggsave(
+    filename = paste0(wd, "/clusters_transfer_temp.pdf"),
+    plot = cluster_plot + annotation_plot + renamed_plot,
+    width = 30,
+    height = 10
+)
+```
+
+### Visualize 
+```{r}
+Idents(obj) <- "seuratAnnotation_major"
+DefaultAssay(obj) <- "RNA"
+detable <- FindAllMarkers(obj)
+detable %>%
+    group_by(cluster) %>%
+    top_n(n = 4, wt = avg_log2FC) -> top
+
+dotplot <- DotPlot(obj, features = top$gene) + 
+    coord_flip() +
+    scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
+cluster_plot <- DimPlot(obj, group.by = "seuratAnnotation_major", label = TRUE)
+annotation_plot <- DimPlot(obj, group.by = cluster_res, label = TRUE)
+
+combined_plot <- annotation_plot / cluster_plot - dotplot
+
+ggsave(
+    filename = paste0(wd, "/annotationMarkers.pdf"),
+    plot = combined_plot,
+    width = 25,
+    height = 15
+)
+```
+
+### save object
+```{r}
+saveRDS(obj, sub("\\.rds$", "_seuratAnnotation.rds", objFile))
+```

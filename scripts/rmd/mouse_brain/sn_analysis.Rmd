@@ -1,0 +1,369 @@
+---
+title: "SIMPlex Mouse Brain — single-nucleus RNA-seq analysis and label transfer"
+subtitle: "Manuscript figures: Fig. 1c–f"
+author: "Mengxiao He"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r config, include=FALSE}
+# DATA_ROOT, HDF5 library, palettes — single source of truth for paths.
+source(here::here("config.R"))
+```
+
+## Load libraries
+
+```{r package, message='hide',warning='hide',results='hold'}
+suppressMessages(require(Seurat))
+suppressMessages(require(SeuratDisk))
+suppressMessages(require(Matrix))
+suppressMessages(require(tidyverse))
+suppressMessages(require(patchwork))
+suppressMessages(require(ggplot2))
+suppressMessages(require(DoubletFinder))
+suppressMessages(require(scCustomize))
+```
+
+## Load cellbender data
+
+```{r loaddata}
+# Load MB sample (cellbender processed)
+snMB_cellbender.data <- Read_CellBender_h5_Mat(file_name = paste0(CELLBENDER, "/mouse_brain/mb_cellbender_output_filtered.h5"), use.names = TRUE)
+snMB <- suppressWarnings(CreateSeuratObject(snMB_cellbender,  project = "SIMPlex_MB"))
+snMB$sample <- "MB_simplex"
+
+rm(snMB_cellbender.data)
+```
+
+## Filter based on 10x CellRanger genes
+
+```{r filtering}
+snMB_cellranger.data <- Seurat::Read10X_h5(
+  filename = paste0(CELLRANGER, "/mouse_brain/sample_filtered_feature_bc_matrix.h5"),
+  use.names = T)
+snMB_cellranger <- CreateSeuratObject(snMB_cellranger.data,  project = "SIMPlex_MB")
+snMB_cellranger$sample <- "MB_2"
+
+snMB_features <- rownames(snMB_cellranger)
+snMB <- subset(snMB, features=snMB_features)
+
+rm(snMB_cellranger.data, snMB_features)
+```
+
+## Filtering (number of cells removed)
+
+```{r qc_filtering}
+selected_c <- WhichCells(snMB, expression = nFeature_RNA > 400)
+selected_f <- rownames(snMB)[ Matrix::rowSums(snMB) > 3]
+snMB.filt <- subset(snMB, features=selected_f, cells=selected_c)
+
+length(colnames(snMB)) - length(colnames(snMB.filt))
+rm(snMB)
+```
+
+## Normalize, PCA and Dim Elbow
+
+```{r norm}
+snMB.filt <- SCTransform(snMB.filt, vst.flavor="v2", verbose = FALSE)
+snMB.filt <- RunPCA(snMB.filt, features = VariableFeatures(object = snMB.filt), verbose = FALSE)
+ElbowPlot(snMB.filt, reduction = "pca", ndims = 50)
+```
+
+## UMAP
+
+```{r umap}
+snMB.filt <- RunUMAP(snMB.filt, dims = 1:30, verbose = FALSE)
+```
+
+## Predict dublets
+
+```{r doubletfinder}
+# Run parameter optimization with paramSweep
+sweep.res <- paramSweep_v3(MB_2.filt, PCs = 1:30, sct = TRUE)
+sweep.stats <- summarizeSweep(sweep.res, GT = FALSE)
+bcmvn <- find.pK(sweep.stats)
+barplot(bcmvn$BCmetric, names.arg = bcmvn$pK, las=2)
+snMB_pK <- bcmvn$pK[which.max(bcmvn$BCmetric)]
+
+# define the expected number of doublet cells
+nExp <- round(ncol(MB_2.filt)* 0.10)
+MB_2.filt <- doubletFinder_v3(MB_2.filt, pN=0.25, pK = snMB_pK, nExp = nExp, PCs = 1:30, sct = TRUE)
+```
+
+## Visualize the doublet finder results
+
+```{r DP.find}
+DF.name = colnames(snMB.filt@meta.data)[grepl("DF.classification", colnames(snMB.filt@meta.data))]
+DimPlot(snMB.filt, group.by = DF.name) + NoAxes() + ggtitle("MB nuclei doublets prediction")
+```
+
+## Doublet removal
+
+```{r filter.doublets}
+snMB.filt_singlet = snMB.filt[,snMB.filt@meta.data[,DF.name] == "Singlet"]
+rm(snMB.filt)
+```
+
+## Normalize, highly variable features, scaling and PCA
+
+```{r pre-proc}
+snMB.filt_singlet <- SCTransform(snMB.filt_singlet, vst.flavor="v2", verbose = FALSE)
+snMB.filt_singlet <- RunPCA(snMB.filt_singlet, features = VariableFeatures(object = snMB.filt_singlet), verbose = FALSE)
+ElbowPlot(snMB.filt_singlet, reduction = "pca", ndims = 50)
+```
+
+## UMAP after duplicate removal
+
+```{r umap_sample}
+snMB.filt_singlet <- RunUMAP(snMB.filt_singlet, dims = 1:30, verbose = FALSE)
+```
+
+## Load scRNA public data (Mouse Brain Atlas from Linnarsson Lab)
+
+```{r load_ref_data}
+mb_sc_ref.loom <- Connect(filename = paste0(EXT_REFS, "/mouse_brain_atlas/l5_all.loom"), mode = "r")
+mb_sc_ref <- as.Seurat(mb_sc_ref.loom)
+mb_sc_ref.loom$close_all()
+rm(mb_sc_ref.loom)
+
+# Only keep cells of brain
+mb_sc_ref <- SetIdent(mb_sc_ref, value = "Tissue")
+mb_sc_ref <- subset(mb_sc_ref, idents = c("MBv", "Thal", "Pons", "Medulla", "SScortex", "StriatDor", "CB", "MBd", "Hypoth", "Ctx1", "StriatVent", "OB", "HC", "Ctx3", "Ctx2", "Amygd", "CA1", "DentGyr", "Ctx1.5"))
+
+# perform standard pre-processing on each object
+mb_sc_ref <- SCTransform(mb_sc_ref, vst.flavor="v2", verbose = FALSE)
+mb_sc_ref <- RunPCA(mb_sc_ref, verbose = FALSE)
+mb_sc_ref <- RunUMAP(mb_sc_ref, dims = 1:30, verbose = FALSE)
+```
+
+## Label transfer
+
+```{r label_transfer}
+# find anchors
+anchors <- FindTransferAnchors(reference = mb_sc_ref, query = snMB.filt_singlet)
+
+# transfer labels
+predictions.sub <- TransferData(
+  anchorset = anchors,
+  refdata = mb_sc_ref$Subclass,
+  verbose = FALSE
+)
+predictions.tax4 <- TransferData(
+  anchorset = anchors,
+  refdata = mb_sc_ref$TaxonomyRank4,
+  verbose = FALSE
+)
+
+snMB_labeltransfer_Subclass <- AddMetaData(object = snMB.filt_singlet, metadata = predictions.sub)
+snMB.filt_singlet$subclass <- snMB_labeltransfer_Subclass$predicted.id
+snMB_labeltransfer_TaxonomyRank4 <- AddMetaData(object = snMB.filt_singlet, metadata = predictions.tax4)
+snMB.filt_singlet$tax <- snMB_labeltransfer_TaxonomyRank4$predicted.id
+
+DimPlot(snMB_labeltransfer_Subclass, reduction = "umap", group.by = "predicted.id", label = TRUE, repel = TRUE, label.size = 5, pt.size = 1) + 
+  ggtitle("SIMPlex snMB - label transfer (Mouse Brain Atlas)", subtitle = "Subclass") + 
+  guides(color=guide_legend(ncol =1))
+DimPlot(snMB_labeltransfer_TaxonomyRank4, reduction = "umap", group.by = "predicted.id", pt.size = 1) + 
+  ggtitle("SIMPlex snMB - label transfer (Mouse Brain Atlas)", subtitle = "TaxonomyRank4") + 
+  guides(color=guide_legend(ncol =1))
+```
+
+## Label transfer with public cortex data (Allen)
+
+```{r label_transfer_allen}
+se.allen <- readRDS(paste0(EXT_REFS, "/mouse_brain_atlas/allen_cortex.rds"))
+
+# perform standard preprocessing on each object
+se.allen <- SCTransform(se.allen, vst.flavor="v2", verbose = FALSE)
+se.allen <- RunPCA(se.allen, verbose = FALSE)
+se.allen <- RunUMAP(se.allen, dims = 1:30, verbose = FALSE)
+
+# find anchors
+anchors <- FindTransferAnchors(reference = se.allen, query = snMB.filt_singlet)
+
+# transfer labels
+predictions <- TransferData(
+  anchorset = anchors,
+  refdata = se.allen$subclass,
+  verbose = FALSE
+)
+
+snMB_labeltransfer_allen_cortex <- AddMetaData(object = snMB.filt_singlet, metadata = predictions)
+snMB.filt_singlet$allen_cortex <- snMB_labeltransfer_allen_cortex$predicted.id
+
+L2_3_IT <- WhichCells(snMB_SIMP_allen, idents = c("L2/3 IT"))
+L4 <- WhichCells(snMB_SIMP_allen, idents = c("L4"))
+L5_IT <- WhichCells(snMB_SIMP_allen, idents = c("L5 IT"))
+L5_PT <- WhichCells(snMB_SIMP_allen, idents = c("L5 PT"))
+L6_CT <- WhichCells(snMB_SIMP_allen, idents = c("L6 CT"))
+L6_IT <- WhichCells(snMB_SIMP_allen, idents = c("L6 IT"))
+L6b <- WhichCells(snMB_SIMP_allen, idents = c("L6b"))
+
+cells <- list("L2/3 IT" = L2_3_IT,
+              "L4" = L4,
+              "L5 IT" = L5_IT,
+              "L5 PT" = L5_PT,
+              "L6 CT" = L6_CT,
+              "L6 IT" = L6_IT,
+              "L6b" = L6b)
+
+Cell_Highlight_Plot(seurat_object = snMB_SIMP_allen, cells_highlight = cells, 
+                    highlight_color = c("#332288", "#88CCEE", "#44AA99", "#117733", "#DDCC77", "#CC6677","#AA4499"))
+```
+
+## UMAP
+
+```{r umap_annotations}
+#Subtype
+DimPlot(snMB, reduction = "umap", group.by = "subclass", label = TRUE, repel = TRUE, label.size = 5, pt.size = 1) + 
+  ggtitle("SIMPlex snMB - label transfer (Mouse Brain Atlas)", subtitle = "Subclass") + 
+  guides(color=guide_legend(ncol =1))
+
+#Taxonomy level 4
+DimPlot(snMB, reduction = "umap", group.by = "tax4", pt.size = 1) + 
+  ggtitle("SIMPlex snMB - label transfer (Mouse Brain Atlas)", subtitle = "TaxonomyRank4") + 
+  guides(color=guide_legend(ncol =1))
+```
+
+## Markers and dotplot for label transfered cell type annotations
+
+```{r dotplot, fig.height=14, fig.width=14}
+#Subclass
+Idents(snMB) <- snMB$subclass
+sn.markers.subclass <- FindAllMarkers(snMB, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, verbose = FALSE)
+sn.markers.subclass %>% group_by(cluster) %>% slice_max(n = 5, order_by = avg_log2FC)
+write.csv(sn.markers.subclass, paste0(SN_RDS, "/mouse_brain/top5_markers_subclass.csv"), row.names = FALSE)
+
+AllMarkers.F <- sn.markers.subclass %>%
+  filter(p_val_adj < 0.01)
+
+top5CL <- AllMarkers.F %>%
+  group_by(cluster) %>%
+  arrange(as.numeric(cluster)) %>%
+  top_n(wt = avg_log2FC, n = 5)
+
+DotPlot(snMB, 
+        features = unique(top5CL$gene), 
+        col.min = 0, 
+        dot.min = 0, 
+        dot.scale = 5,
+        group.by = "subclass") + 
+  RotatedAxis() + 
+  xlab('Marker genes') + 
+  ylab('Samples') + 
+  scale_y_discrete(limits=rev) + 
+  scale_x_discrete(position = "top") + 
+  theme(text = element_text(size = 10), 
+        axis.text.x=element_text(size=14),
+        axis.text.x.top = element_text(margin = margin(b = 1), hjust = 0),
+        axis.text.y=element_text(size=12), 
+        legend.direction="horizontal", 
+        legend.position = "top")
+
+#Tax4
+Idents(snMB) <- snMB$tax4
+sn.markers.tax4 <- FindAllMarkers(snMB, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, verbose = FALSE)
+sn.markers.tax4 %>% group_by(cluster) %>% slice_max(n = 5, order_by = avg_log2FC)
+write.csv(sn.markers.tax4, paste0(SN_RDS, "/mouse_brain/top5_markers_tax4.csv"), row.names = FALSE)
+
+AllMarkers.F <- sn.markers.tax4 %>%
+  filter(p_val_adj < 0.01)
+
+top5CL <- AllMarkers.F %>%
+  group_by(cluster) %>%
+  arrange(as.numeric(cluster)) %>%
+  top_n(wt = avg_log2FC, n = 5)
+
+DotPlot(snMB, 
+        features = unique(top5CL$gene), 
+        col.min = 0, 
+        dot.min = 0, 
+        dot.scale = 8,
+        group.by = "") + 
+  RotatedAxis() + 
+  xlab('Marker genes') + 
+  ylab('Samples') + 
+  scale_y_discrete(limits=rev) + 
+  scale_x_discrete(position = "top") + 
+  theme(text = element_text(size = 10), 
+        axis.text.x=element_text(size=14),
+        axis.text.x.top = element_text(margin = margin(b = 1), hjust = 0),
+        axis.text.y=element_text(size=14), 
+        legend.direction="horizontal", 
+        legend.position = "top")
+```
+
+## UMAP
+
+```{r allen_highlight_plot}
+#Select cortex layer cell types
+L2_3_IT <- WhichCells(snMB, idents = c("L2/3 IT"))
+L4 <- WhichCells(snMB, idents = c("L4"))
+L5_IT <- WhichCells(snMB, idents = c("L5 IT"))
+L5_PT <- WhichCells(snMB, idents = c("L5 PT"))
+L6_CT <- WhichCells(snMB, idents = c("L6 CT"))
+L6_IT <- WhichCells(snMB, idents = c("L6 IT"))
+L6b <- WhichCells(snMB, idents = c("L6b"))
+
+cells <- list("L2/3 IT" = L2_3_IT,
+              "L4" = L4,
+              "L5 IT" = L5_IT,
+              "L5 PT" = L5_PT,
+              "L6 CT" = L6_CT,
+              "L6 IT" = L6_IT,
+              "L6b" = L6b)
+
+Cell_Highlight_Plot(seurat_object = snMB, cells_highlight = cells, 
+                    highlight_color = c("#332288", "#88CCEE", "#44AA99", "#117733", "#DDCC77", "#CC6677","#AA4499"))
+```
+
+## Markers and dotplot for label transfered cell type annotations
+
+```{r dotplot, fig.height=14, fig.width=14}
+Idents(snMB) <- snMB$allen_cortex
+sn.markers.allen <- FindAllMarkers(snMB, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, verbose = FALSE)
+sn.markers.allen %>% group_by(cluster) %>% slice_max(n = 5, order_by = avg_log2FC)
+write.csv(sn.markers.allen, paste0(SN_RDS, "/mouse_brain/top5_markers_allen.csv"), row.names = FALSE)
+
+AllMarkers.F <- sn.markers.allen %>%
+  filter(p_val_adj < 0.01)
+
+top5CL <- AllMarkers.F %>%
+  group_by(cluster) %>%
+  arrange(as.numeric(cluster)) %>%
+  top_n(wt = avg_log2FC, n = 5)
+
+top5CL <- subset(top5CL, cluster %in% c("L2/3 IT", "L4", "L5 IT", "L5 PT", "L6 CT", "L6 IT", "L6b"))
+snMB_subset <- subset(snMB, idents = c("L2/3 IT", "L4", "L5 IT", "L5 PT", "L6 CT", "L6 IT", "L6b"))
+
+DotPlot(snMB_subset, 
+        features = unique(top5CL$gene),
+        col.min = 0, 
+        dot.min = 0, 
+        dot.scale = 8,
+        group.by = "allen_cortex") + 
+  RotatedAxis() + 
+  xlab('Marker genes') + 
+  ylab('Samples') + 
+  scale_y_discrete(limits=rev) + 
+  scale_x_discrete(position = "top") + 
+  theme(text = element_text(size = 10), 
+        axis.text.x=element_text(size=14),
+        axis.text.x.top = element_text(margin = margin(b = 1), hjust = 0),
+        axis.text.y=element_text(size=12), 
+        legend.direction="horizontal", 
+        legend.position = "top")
+```
+
+## Save objects
+
+```{r save}
+saveRDS(snMB.filt_singlet, file = paste0(SN_RDS, "/mouse_brain/snRNA.rds"))
+```
+
+## Session info
+```{r session_info}
+sessionInfo()
+```

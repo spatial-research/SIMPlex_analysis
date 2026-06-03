@@ -1,0 +1,4306 @@
+---
+title: "SIMPlex Breast Cancer — fine-grained cell state analysis and niche characterisation"
+subtitle: "Manuscript figures: Fig. 2i-k, Fig. 3, Extended Data Fig. 7-9"
+author: "Marcos Tito Machado"
+output: html_document
+---
+
+```{r config, include=FALSE}
+# DATA_ROOT, HDF5 library, palettes — single source of truth for paths.
+source(here::here("config.R"))
+```
+
+```{r}
+# HDF5 library is loaded by config.R
+library(semla)
+library(tibble)
+library(Seurat)
+options(Seurat.object.assay.version = "v5")
+library(patchwork)
+library(plotly)
+library(singlet)
+library(RcppML)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(viridis)
+library(pheatmap)
+library(cowplot)
+library(corrplot)
+library(RColorBrewer)
+library(heatmap3)
+library(harmony)
+library(gridExtra)
+library(paletteer)
+library(Matrix)
+```
+
+### Settings 
+```{r}
+rootObj <- paste0(SN_RDS, "/breast_cancer/cross_patient/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/")
+if (!dir.exists(rootObj)) {
+    dir.create(rootObj, recursive = TRUE)
+}
+if (!dir.exists(wd)) {
+    dir.create(wd, recursive = TRUE)
+}
+
+# COLORS
+colsCelltype <- rev(paletteer_c("grDevices::Temps", 9))
+colsCelltype <- c("#EAE29CFF", "#6CC382FF", "#E99F69FF", "#CF597EFF", "#EAC17AFF", "#29AD8EFF", "#B2D387FF","#E4796DFF", "#089392FF")
+colsSample <- paletteer_c("grDevices::Dark 3", 10)
+colsSubtype <- c("#6EA9B0", "#B1A6D1", "#E18A96") # rev(paletteer_c("ggthemes::Red-Green-Gold Diverging", 3))
+colsMalignancy <- c("#84D7E1","#6ABE8C","#FF95A8")
+colsAssays <- c("#6A5ACD", "#FFA500", "#20B2AA")
+```
+
+################################################################################# CAF analysis ####################################################################################
+
+#### load progress
+```{r}
+int.all <- readRDS(paste0(rootObj, "SIMPlex_breast_allSamples.rds"))
+samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
+spls <- list()
+for (sample in samples) {
+    output_path <- paste0(paste0(SPATIAL_RDS, "/breast_cancer/55um/", sample, "/", sample, "_3decon.rds"))
+    if (file.exists(output_path)) {
+        spls[[sample]] <- readRDS(output_path)
+    }
+}
+```
+
+## Integrate CAFs only 
+```{r}
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/subtype_annotation/")
+merged.cafs <- subset(int.all, subset = seuratAnnotation_major == "CAFs")
+wd <- paste0(wd, "CAFs/")
+if (!dir.exists(wd)) {
+    dir.create(wd, recursive = TRUE)
+}
+```
+
+### remove contaminant cell types and low confidence data
+after an initial round of attempted annotation we realize, based on marker genes, that there may be some 
+epithelial, immune cell types, or doublets that may skew the results 
+```{r}
+# Define marker genes and thresholds
+positive_markers <- c("COL1A1", "COL1A2")
+negative_markers <- c("EPCAM", "KRT8", "CD3D", "CD3E", "MS4A1", "TRAC", "CD163") # immune and epithelial
+positive_threshold <- 0.5
+negative_threshold <- 0.5
+
+# Fetch expression data for marker genes
+expr_pos <- FetchData(merged.cafs, vars = positive_markers)
+expr_neg <- FetchData(merged.cafs, vars = negative_markers)
+
+# Identify cells to keep: all positive markers above threshold, all negative markers below threshold
+cells_to_keep <- rownames(expr_pos)[
+    apply(expr_pos, 1, function(x) all(x > positive_threshold)) &
+    apply(expr_neg, 1, function(x) all(x < negative_threshold))
+]
+
+cells_before <- ncol(merged.cafs)
+merged.cafs <- subset(merged.cafs, cells = cells_to_keep)
+cells_after <- ncol(merged.cafs)
+
+cat("Number of cells removed:", cells_before - cells_after, "\n")
+```
+
+```{r}
+set.seed(1)
+merged.cafs <- merged.cafs %>%
+  NormalizeData() %>%
+  FindVariableFeatures() %>%
+  ScaleData() %>%
+  RunPCA() %>%
+  RunUMAP(dims = 1:30)
+# plot pre integration
+ggsave(
+    filename = paste0(wd, "integration/pca_pre_integration.pdf"),
+    plot = DimPlot(merged.cafs, reduction = "pca", group.by = "sample"),
+    width = 10,
+    height = 10
+)
+ggsave(
+    filename = paste0(wd, "integration/umap_pre_integration.pdf"),
+    plot = DimPlot(merged.cafs, reduction = "umap", group.by = c("sample", "patient_ID", "subtype"), ncol = 3),
+    width = 30,
+    height = 7
+)
+# integrate
+int <- merged.cafs %>% 
+    RunHarmony("patient_ID", plot_convergence = TRUE, theta = 0) # min theta since we want to preserve a lot of biological variation
+int <- RunUMAP(int, dims = 1:30, reduction = "harmony") 
+
+# plot post integration
+ggsave(
+    filename = paste0(wd, "integration/pca_post_integration.pdf"),
+    plot = DimPlot(int, reduction = "harmony", group.by = "sample"),
+    width = 10,
+    height = 10
+)
+ggsave(
+    filename = paste0(wd, "integration/umap_post_integration.pdf"),
+    plot = DimPlot(int, reduction = "umap", group.by = c("sample", "patient_ID", "subtype"), ncol = 3),
+    width = 30,
+    height = 7
+)
+```
+
+### Integrated clustering of CAFS 
+```{r}
+set.seed(1)
+int <- FindNeighbors(int, dims = 1:30, reduction = "harmony")
+for (res in c(0.1, 0.25, .3, .4, .5, 0.8, 1, 1.25)){
+  int <- FindClusters(int, resolution = res, algorithm = 1, verbose = FALSE)
+}
+
+d1 <- DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.1", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.25", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.3", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.4", label = TRUE)
+d2 <- DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.5", label = TRUE) +
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.8", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.1", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.1.25", label = TRUE)
+
+pdf(paste0(wd, "umap_integratedClusters.pdf"), width = 20, height = 20)
+d1 / d2
+dev.off()
+```
+
+```{r}
+renamed <- TRUE
+if (renamed == TRUE) {
+    int@meta.data$seurat_clusters <- int@meta.data$CAF_major
+} else {
+    int@meta.data$seurat_clusters <- int@meta.data$RNA_snn_res.0.8
+}
+Idents(int) <- "seurat_clusters"
+ggsave(
+    filename = paste0(wd, if (renamed) "renamed_" else "", "umap_post_integration_clusters.pdf"),
+    plot = DimPlot(int, reduction = "umap", group.by = c("patient_ID", "subtype", "seurat_clusters"), ncol = 2, label = TRUE, raster = FALSE),
+    width = 16,
+    height = 12
+)
+```
+
+## Comparing our CAF clusters to literature
+
+The goal on this section is to compare the subpopulations in https://www.nature.com/articles/s41467-023-39762-1 
+and compare it with our CAF cell states.
+
+```{r}
+
+mCAF <- c("FAP","MMP11", "COMP", "POSTN", "COL1A1", "COL1A2", "COL10A1", "COL11A1", "COL8A1", "COL1A2", "COL12A1", "COL3A1", "COL8A1", "COL5A2")
+iCAF <- c("CFD", "PLA2G2A", "APOD", "CXCL14", "CD34", "CCLX12", "IL6")
+vCAF <- c("NOTCH3", "COL18A1", "MCAM", "MHY11", "RERGL", "ACTA2")
+tCAF <- c("PDPN", "MME", "TMEM158", "NDRG1")
+ifnCAF <- c("IL32", "CXCL9", "CXCL10", "CXCL11", "IDO1")
+apCAF <- c("HLA-DRA", "HLA-DRB1", "CD74")
+rCAF <- c("CCL21", "CCL19", "IGFBP5")
+
+caf_celltypes <- list(
+  mCAF = mCAF,
+  iCAF = iCAF,
+  vCAF = vCAF,
+  tCAF = tCAF,
+  ifnCAF = ifnCAF,
+  apCAF = apCAF,
+  rCAF = rCAF
+)
+
+nat_all_genes <- unique(c(mCAF, iCAF, vCAF, tCAF, ifnCAF, apCAF, rCAF))
+
+Idents(int) <- "seurat_clusters"
+p <- DotPlot(int, features = nat_all_genes) + 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+if (renamed) {
+    ggsave(paste0(wd, "renamed_nat_markers_dotplot.pdf"), p, width = 10, height = 10)
+} else {
+    ggsave(paste0(wd, "nat_markers_dotplot.pdf"), p, width = 10, height = 10)
+}
+
+ggsave(
+    filename = paste0(wd, if (renamed) "renamed_" else "", "nat_markers_umap.pdf"),
+    plot = FeaturePlot(int, features = nat_all_genes),
+    width = 50,
+    height = 70,
+    limitsize = FALSE
+)
+```
+
+#### Gene expression similarity heatmap 
+
+```{r}
+nat <- readRDS(paste0(EXT_REFS, "/CAF_Cords2023/BREAST_fibro_tumour.rds"))
+Idents(int) <- "seurat_clusters"
+Idents(nat) <- "CAFtype"
+caf_cells <- rownames(int@meta.data)
+int <- FindVariableFeatures(int, selection.method = "vst", nfeatures = 3000)
+int <- ScaleData(int)
+
+genesNat <- VariableFeatures(nat)
+genesCafs <- VariableFeatures(int)
+
+natAvg <- AverageExpression(nat, group.by = "CAFtype", return.seurat = TRUE, assays = "RNA")
+natAvg <- ScaleData(natAvg)
+natData <- FetchData(object = natAvg, vars = genesNat, layer = "scale.data")
+cafsAvg <- AverageExpression(int, group.by = "seurat_clusters", return.seurat = TRUE, assays = "RNA")
+cafsAvg <- ScaleData(cafsAvg)
+cafsData <- FetchData(object = cafsAvg, vars = genesCafs, layer = "scale.data")
+
+# Extract gene names from each dataset, find common genes, merge datasets
+genes_nat <- colnames(natData)
+genes_cafs <- colnames(cafsData)
+common_genes <- Reduce(intersect, list(genes_nat, genes_cafs))
+nat_common <- natData[, common_genes]
+cafs_common <- cafsData[, common_genes]
+
+# Calculate correlation between spatial and combined dataset
+correlation <- cor(t(nat_common), t(cafs_common))
+
+# Save the plot generated by pheatmap
+pdf(paste0(wd, if (renamed) "renamed_" else "", "2023_Cords_natComms_COMPARISON.pdf"), width = 10, height = 10)
+heatmap3(correlation, margins = c(13, 10), scale = "none")
+dev.off()
+
+print(paste0("Based on ", length(common_genes), " common genes"))
+```
+
+## GSEA CAF subpopulations
+```{r}
+library(singleseqgset)
+library(msigdbr)
+
+#### Select Gene Set of interest
+# H: hallmark gene sets
+# C1: positional gene sets
+# C2: curated gene sets
+
+category <- "H" # category from Human MSigDB Collections
+h.human <- msigdbr(species="Homo sapiens",category=category)
+subcategory <- ""
+h.human <- h.human %>% filter(gs_subcat == subcategory)
+h.names <- unique(h.human$gs_name)
+h.sets <- vector("list",length=length(h.names))
+names(h.sets) <- h.names
+for (i in names(h.sets)) {
+    h.sets[[i]] <- pull(h.human[h.human$gs_name==i,"gene_symbol"])
+}
+#### Filter out non relevant pathways
+# Define the list of pathways to remove
+remove_pathways <- c(
+  "HALLMARK_BILE_ACID_METABOLISM",         # Liver-specific  
+  "HALLMARK_PANCREAS_BETA_CELLS",          # Pancreatic function  
+  "HALLMARK_SPERMATOGENESIS",              # Testis-specific  
+  "HALLMARK_MYOGENESIS",                   # Muscle development  
+  "HALLMARK_ADIPOGENESIS",                 # Fat cell differentiation  
+  "HALLMARK_FATTY_ACID_METABOLISM",        # General lipid metabolism  
+  "HALLMARK_HEME_METABOLISM",              # Blood-related, not CAF-specific  
+  "HALLMARK_CHOLESTEROL_HOMEOSTASIS",      # Unrelated lipid metabolism  
+  "HALLMARK_PEROXISOME",                   # General cell detox pathway  
+  "HALLMARK_XENOBIOTIC_METABOLISM",        # Detox, not breast cancer-related  
+  "HALLMARK_UV_RESPONSE_DN",               # Skin cancer-related  
+  "HALLMARK_UV_RESPONSE_UP"                # Skin cancer-related  
+)
+# Filter the list, keeping only relevant pathways
+h.sets <- h.sets[!names(h.sets) %in% remove_pathways]
+##### Change names (aesthetic purposes only)
+names(h.sets) <- gsub("HALLMARK_", "", names(h.sets))
+#### Log Fold change
+Idents(int) <- "seurat_clusters"
+int$seurat_clusters <- Idents(int)
+mtx <- GetAssayData(int, assay = "RNA", layer = "data")
+logfc.cafs <- logFC(cluster.ids = int@meta.data$seurat_clusters, expr.mat = mtx)
+names(logfc.cafs)
+#### Run GSEA
+gse.res <- wmw_gsea(expr.mat=mtx, cluster.cells=logfc.cafs[[1]],
+                    log.fc.cluster=logfc.cafs[[2]],
+                    gene.sets=h.sets)
+res.stats <- gse.res[["GSEA_statistics"]]
+res.pvals <- gse.res[["GSEA_p_values"]]
+res.pvals <- apply(res.pvals,2,p.adjust,method="fdr") #Correct for multiple comparisons
+res.stats[order(res.stats[,1],decreasing=TRUE)[1:10],] #Top gene sets enriched by z scores
+#Plot the z scores with heatmap3
+if (renamed) {
+    pdf(paste0(wd, "renamed_GSEA.pdf"), width = 10, height = 12)
+} else {
+    pdf(paste0(wd, "GSEA.pdf"), width = 10, height = 12)
+}
+heatmap3(res.stats, margins = c(13, 20))
+dev.off()
+```
+
+## Rename clusters to putative populations
+
+#### Use Cords 2023 to find rough identities
+```{r}
+Idents(int) <- "seurat_clusters"
+ref <- readRDS(paste0(EXT_REFS, "/CAF_Cords2023/BREAST_fibro_tumour.rds"))
+ref <- UpdateSeuratObject(ref) # convert v3 to v5
+DefaultAssay(ref) <- "RNA"
+ref <- ref |>
+  NormalizeData() |>
+  FindVariableFeatures() |>
+  ScaleData()
+
+anchors <- FindTransferAnchors(reference = ref, query = int)
+predictions <- TransferData(
+  anchorset = anchors,
+  refdata = ref$CAFtype,
+  verbose = FALSE
+)
+int <- AddMetaData(object = int, metadata = predictions)
+```
+
+#### UMAP and patient distribution bar plot 
+```{r}
+plot_distribution <- function(obj, metadata_column, fill) {
+    # Create a data frame for plotting
+    plot_data <- obj@meta.data %>%
+        dplyr::count(!!rlang::sym(metadata_column), !!rlang::sym(fill)) %>%
+        dplyr::group_by(!!rlang::sym(metadata_column)) %>%
+        dplyr::mutate(percentage = n / sum(n) * 100)
+
+    # Calculate entropy for each subpopulation
+    entropy <- plot_data %>%
+        dplyr::group_by(!!rlang::sym(metadata_column)) %>%
+        dplyr::summarize(entropy = -sum(percentage / 100 * log2(percentage / 100)))
+
+    # Merge entropy with plot_data
+    plot_data <- plot_data %>%
+        dplyr::left_join(entropy, by = metadata_column) %>%
+        dplyr::arrange(entropy)
+
+    # Plot the stacked histogram
+    p <- ggplot(plot_data, aes(x = reorder(!!rlang::sym(metadata_column), entropy), y = percentage, fill = !!rlang::sym(fill))) +
+        geom_bar(stat = "identity") +
+        labs(x = "Subpopulations", y = "Percentage", fill = "Metadata") +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 55, hjust = 1), 
+              plot.margin = margin(t = 10,  # Top margin
+                                   r = 10,  # Right margin
+                                   b = 10,  # Bottom margin
+                                   l = 30)) # Left margin
+    return(p)
+}
+
+p2 <- plot_distribution(int, "seurat_clusters", "patient_ID")
+p3 <- plot_distribution(int, "seurat_clusters", "subtype")
+p4 <- plot_distribution(int, "seurat_clusters", "predicted.id")
+p5 <- p2 + p3 + p4
+
+p1 <- DimPlot(int, group.by = c("seurat_clusters", "predicted.id", "patient_ID", "subtype"), label = TRUE, ncol = 2)
+p <- p1 - p5 + plot_layout(ncol = 2, widths = c(5, 5))
+
+ggsave(
+    filename = paste0(wd, if (renamed) "renamed_" else "", "summary_plot.pdf"),
+    plot = p,
+    width = 30,
+    height = 10
+)
+```
+
+### markers
+```{r}
+Idents(int) <- "seurat_clusters"
+markers <- FindAllMarkers(int, assay = "RNA")
+top_markers <- markers %>%
+  group_by(cluster) %>%
+  top_n(n = 5, wt = avg_log2FC)
+top100 <- markers %>%
+    group_by(cluster) %>%
+    top_n(n = 100, wt = avg_log2FC)
+write.csv(top100, file = paste0(wd, "caf_markers.csv"), row.names = FALSE)
+
+temp <- subset(int, seurat_clusters %in% na.omit(int$seurat_clusters))
+p <- DotPlot(temp, features = unique(top_markers$gene)) + # the subset is to fix a bug related to NAs 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+ggsave(
+    filename = paste0(wd, if (renamed) "renamed_" else "", "markers_dotplot.pdf"),
+    plot = p,
+    width = 10,
+    height = 13
+) 
+```
+
+```{r}
+# Violin plot of QC metrics by cluster (no dots)
+qc_features <- c("nFeature_RNA", "nCount_RNA", "percent.mt")
+if (!"percent.mt" %in% colnames(int@meta.data)) {
+    int[["percent.mt"]] <- PercentageFeatureSet(int, pattern = "^MT-")
+}
+p <- VlnPlot(int, features = qc_features, group.by = "seurat_clusters", pt.size = 0, ncol = 3)
+ggsave(
+    filename = paste0(wd, "qc_violin_clusters.pdf"),
+    plot = p,
+    width = 12,
+    height = 6
+)
+```
+
+#### Rename clusters
+Renaming clusters based on majority identity of label transfer from Cords et al. 2023 and Patient/Subtype origin
+
+```{r}
+int@meta.data$CAF_major <- int@meta.data$seurat_clusters
+caf.renames <- c(
+    "5" = "apCAF_classical",
+    "10" = "apCAF_TcellMimicry",
+    "13" = "apCAF_TNBC-enriched",
+    "3" = "iCAF_classical",
+    "4" = "iCAF_classical",
+    "6" = "iCAF_secretory",
+    "14" = "iCAF_lipid-associated",
+    "11" = "vCAF",
+    "1" = "mCAF_plastic",
+    "2" = "mCAF_plastic",
+    "0" = "mCAF_classical",
+    "8" = "mCAF_remodeling",
+    "9" = "ifnCAF_interferon",
+    "7" = "CAF_unassigned",
+    "12" = "mCAF_patient4-specific"
+)
+int@meta.data$CAF_major <- plyr::mapvalues(int@meta.data$CAF_major, from = names(caf.renames), to = caf.renames)
+int@meta.data$seurat_clusters <- int@meta.data$CAF_major
+``` 
+
+#### add subclusters back to main object
+
+```{r}
+# Create a new metadata column for subpopulation class
+int.all$subpopulation <- int.all$seuratAnnotation_major
+int.all$subpopulation[names(int$seurat_clusters)] <- as.character(int$seurat_clusters[names(int$seurat_clusters)])
+ggsave(
+    filename = paste0(wd, "placed_back_CAFclusters.pdf"),
+    plot = DimPlot(int.all, group.by = "subpopulation", label = TRUE),
+    width = 10,
+    height = 8
+)
+ggsave(
+    filename = paste0(wd, "apCAF_sanitycheck.pdf"),
+    plot = FeaturePlot(int.all, features = c("CD74", "CIITA", "COL1A1", "COL1A2"), ncol = 2),
+    width = 15,
+    height = 15
+)
+```
+
+```{r}
+# saveRDS(int, paste0(rootObj, "caf_subpop_analysis.rds"))
+# saveRDS(int.all, paste0(rootObj, "integrated_all_subpopulations.rds"))
+```
+
+we can go back up and regenerate plots now with the renamed clusters. 
+Change renamed to TRUE
+
+### Integrated Spatial mapping 
+
+###### map Vis 55um
+```{r}
+patient_specific <- FALSE
+img_filename <- "patient_combined_subpops_cafs_vis55.jpg"
+samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
+spls <- list()
+for (sample in samples){
+    vis <- readRDS(paste0(paste0(SPATIAL_RDS, "/breast_cancer/55um/", sample, "/", sample, "_spatial.rds"))
+    if (patient_specific == TRUE){
+        ref <- subset(int.all, subset = sample == !!sample)
+    } else {
+        ref <- int.all
+    }
+    
+
+    ## Map w/ semla NNLS
+    ident <- "subpopulation"
+    celltype <- "subpopulation"
+    DefaultAssay(vis) <- "Spatial"
+    DefaultAssay(ref) <- "RNA"
+    vis <- vis |>
+    NormalizeData() |>
+    FindVariableFeatures(nfeatures = 5000) |>
+    ScaleData()
+    ref <- ref |>
+    FindVariableFeatures(nfeatures = 2000) # N used here because we want to be specific. The differences between each cell type are very small, so we want to use a smaller number of features
+    vis <- RunNNLS(vis, singlecell_object = ref, spatial_assay = DefaultAssay(vis), singlecell_assay = DefaultAssay(ref), groups = ident, slot = "data", assay_name = celltype)
+    DefaultAssay(vis) <- celltype
+
+    spls[[sample]] <- vis
+}
+
+sample_plots <- list()
+for (sample in samples) {
+    vis <- spls[[sample]]
+    features = unique(gsub("_", "-", int$CAF_major))
+    # Ensure all features are present in the vis object
+    missing_features <- setdiff(features, rownames(vis))
+    vis@assays$subpopulation@data <- rbind(
+    vis@assays$subpopulation@data,
+    Matrix(0, length(missing_features <- setdiff(missing_features, rownames(vis@assays$subpopulation@data))),
+            ncol(vis@assays$subpopulation@data), dimnames = list(missing_features, colnames(vis@assays$subpopulation@data))))
+
+    if (length(vis$sample_id) > 5000) {
+        pt_size <- 1
+    } else if (length(vis$sample_id) < 5000) {
+        pt_size <- 1.6
+    }
+    p <- MapFeatures(vis, features = features, colors = viridis::turbo(11), label_by = "sample_id", pt_size = pt_size, override_plot_dims = TRUE, scale = "shared", ncol = length(features))
+    sample_plots[[sample]] <- p & scale_fill_viridis_c(limits = c(0,1), option = "H")
+}
+# Merge all sample plots into a final plot
+final_plot <- patchwork::wrap_plots(sample_plots, ncol = 1)
+ggsave(paste0(wd, "map/", img_filename), final_plot, height = 5*length(samples), width = 3 * length(features), dpi = 300, limitsize = FALSE)
+```
+
+################################################################## Epithelial analysis #####################################################################################################
+
+#### load progress
+```{r}
+int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
+samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
+spls <- list()
+for (sample in samples) {
+    output_path <- paste0(paste0(SPATIAL_RDS, "/breast_cancer/55um/", sample, "/", sample, "_3decon.rds")
+    if (file.exists(output_path)) {
+        spls[[sample]] <- readRDS(output_path)
+    }
+}
+```
+
+## Integrate Epithelial only 
+```{r}
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/subtype_annotation/")
+wd <- paste0(wd, "Epithelial/")
+merged.epi <- subset(int.all, subset = seuratAnnotation_major == "Epithelial")
+if (!dir.exists(wd)) {
+    dir.create(wd, recursive = TRUE)
+}
+```
+
+```{r}
+set.seed(1)
+merged.epi <- merged.epi %>%
+  NormalizeData() %>%
+  FindVariableFeatures() %>%
+  ScaleData() %>%
+  RunPCA() %>%
+  RunUMAP(dims = 1:30)
+# plot pre integration
+ggsave(
+    filename = paste0(wd, "pca_pre_integration.pdf"),
+    plot = DimPlot(merged.epi, reduction = "pca", group.by = "sample"),
+    width = 10,
+    height = 10
+)
+ggsave(
+    filename = paste0(wd, "umap_pre_integration.pdf"),
+    plot = DimPlot(merged.epi, reduction = "umap", group.by = c("sample", "patient_ID", "subtype", "malignancy"), ncol = 2),
+    width = 10,
+    height = 10
+)
+# integrate
+int <- merged.epi %>% 
+    RunHarmony("patient_ID", plot_convergence = TRUE, theta = 0) # min theta since we want to preserve a lot of biological variation
+int <- RunUMAP(int, dims = 1:30, reduction = "harmony") 
+
+# plot post integration
+ggsave(
+    filename = paste0(wd, "pca_post_integration.pdf"),
+    plot = DimPlot(int, reduction = "harmony", group.by = "sample"),
+    width = 10,
+    height = 10
+)
+ggsave(
+    filename = paste0(wd, "umap_post_integration.pdf"),
+    plot = DimPlot(int, reduction = "umap", group.by = c("sample", "patient_ID", "subtype", "malignancy"), ncol = 2),
+    width = 10,
+    height = 10
+)
+```
+
+### Integrated clustering of Epithelial
+```{r}
+set.seed(1)
+int <- FindNeighbors(int, dims = 1:30)
+for (res in c(0.1, 0.25, .3, .4, .5, 0.8, 1, 1.25)){
+  int <- FindClusters(int, resolution = res, algorithm = 1, verbose = FALSE)
+}
+
+d1 <- DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.1", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.25", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.3", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.4", label = TRUE)
+d2 <- DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.5", label = TRUE) +
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.8", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.1", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.1.25", label = TRUE)
+
+pdf(paste0(wd, "umap_integratedClusters.pdf"), width = 20, height = 20)
+d1 / d2
+dev.off()
+```
+
+```{r}
+renamed <- TRUE
+if (renamed == TRUE) {
+    int@meta.data$seurat_clusters <- int@meta.data$EPIclusters_renamed
+} else {
+    int@meta.data$seurat_clusters <- int@meta.data$RNA_snn_res.1
+}
+Idents(int) <- "seurat_clusters"
+ggsave(
+    filename = paste0(wd, if (renamed) "renamed_" else "", "umap_post_integration_clusters.pdf"),
+    plot = DimPlot(int, reduction = "umap", group.by = c("patient_ID", "subtype", "seurat_clusters"), ncol = 2, label = TRUE, raster = FALSE),
+    width = 16,
+    height = 12
+)
+```
+
+## Comparing our EPI clusters to literature
+
+WE compare gene expression to our Reference atlas from BC Atlas
+
+#### Gene expression similarity heatmap 
+
+```{r}
+nat <- readRDS(paste0(EXT_REFS, "/BC_atlas/miniatlas.rds"))
+nat <- subset(nat, subset = celltype_major %in% c("Normal Epithelial", "Cancer Epithelial"))
+Idents(int) <- "seurat_clusters"
+Idents(nat) <- "celltype_minor"
+sub_cells <- rownames(int@meta.data)
+int <- FindVariableFeatures(int, selection.method = "vst", nfeatures = 3000)
+int <- ScaleData(int)
+
+genesNat <- VariableFeatures(nat)
+genesSub <- VariableFeatures(int)
+
+natAvg <- AverageExpression(nat, group.by = "celltype_minor", return.seurat = TRUE, assays = "RNA")
+natAvg <- ScaleData(natAvg)
+natData <- FetchData(object = natAvg, vars = genesNat, layer = "scale.data")
+subAvg <- AverageExpression(int, group.by = "seurat_clusters", return.seurat = TRUE, assays = "RNA")
+subAvg <- ScaleData(subAvg)
+subData <- FetchData(object = subAvg, vars = genesSub, layer = "scale.data")
+
+# Extract gene names from each dataset, find common genes, merge datasets
+genes_nat <- colnames(natData)
+genes_sub <- colnames(subData)
+common_genes <- Reduce(intersect, list(genes_nat, genes_sub))
+nat_common <- natData[, common_genes]
+sub_common <- subData[, common_genes]
+
+# Calculate correlation between spatial and combined dataset
+correlation <- cor(t(nat_common), t(sub_common))
+
+# Save the plot generated by pheatmap
+pdf(paste0(wd, if (renamed) "renamed_" else "", "epithelial_subpop_cluster_comparison_refAtlas.pdf"), width = 10, height = 10)
+heatmap3(correlation, margins = c(13, 10), scale = "none")
+dev.off()
+
+print(paste0("Based on ", length(common_genes), " common genes"))
+```
+
+## GSEA EPI subpopulations
+```{r}
+library(singleseqgset)
+library(msigdbr)
+
+#### Select Gene Set of interest
+# H: hallmark gene sets
+# C1: positional gene sets
+# C2: curated gene sets
+
+category <- "H" # category from Human MSigDB Collections
+h.human <- msigdbr(species="Homo sapiens",category=category)
+subcategory <- ""
+h.human <- h.human %>% filter(gs_subcat == subcategory)
+h.names <- unique(h.human$gs_name)
+h.sets <- vector("list",length=length(h.names))
+names(h.sets) <- h.names
+for (i in names(h.sets)) {
+    h.sets[[i]] <- pull(h.human[h.human$gs_name==i,"gene_symbol"])
+}
+#### Filter out non relevant pathways
+# Define the list of pathways to remove
+remove_pathways <- c(
+  "HALLMARK_BILE_ACID_METABOLISM",         # Liver-specific  
+  "HALLMARK_PANCREAS_BETA_CELLS",          # Pancreatic function  
+  "HALLMARK_SPERMATOGENESIS",              # Testis-specific  
+  "HALLMARK_MYOGENESIS",                   # Muscle development  
+  "HALLMARK_ADIPOGENESIS",                 # Fat cell differentiation  
+  "HALLMARK_FATTY_ACID_METABOLISM",        # General lipid metabolism  
+  "HALLMARK_HEME_METABOLISM",              # Blood-related, not CAF-specific  
+  "HALLMARK_CHOLESTEROL_HOMEOSTASIS",      # Unrelated lipid metabolism  
+  "HALLMARK_PEROXISOME",                   # General cell detox pathway  
+  "HALLMARK_XENOBIOTIC_METABOLISM",        # Detox, not breast cancer-related  
+  "HALLMARK_UV_RESPONSE_DN",               # Skin cancer-related  
+  "HALLMARK_UV_RESPONSE_UP"                # Skin cancer-related  
+)
+# Filter the list, keeping only relevant pathways
+h.sets <- h.sets[!names(h.sets) %in% remove_pathways]
+##### Change names (aesthetic purposes only)
+names(h.sets) <- gsub("HALLMARK_", "", names(h.sets))
+#### Log Fold change
+Idents(int) <- "seurat_clusters"
+int$seurat_clusters <- Idents(int)
+mtx <- GetAssayData(int, assay = "RNA", layer = "data")
+logfc.epi <- logFC(cluster.ids = int@meta.data$seurat_clusters, expr.mat = mtx)
+names(logfc.epi)
+#### Run GSEA
+gse.res <- wmw_gsea(expr.mat=mtx, cluster.cells=logfc.epi[[1]],
+                    log.fc.cluster=logfc.epi[[2]],
+                    gene.sets=h.sets)
+res.stats <- gse.res[["GSEA_statistics"]]
+res.pvals <- gse.res[["GSEA_p_values"]]
+res.pvals <- apply(res.pvals,2,p.adjust,method="fdr") #Correct for multiple comparisons
+res.stats[order(res.stats[,1],decreasing=TRUE)[1:10],] #Top gene sets enriched by z scores
+#Plot the z scores with heatmap3
+if (renamed) {
+    pdf(paste0(wd, "renamed_GSEA.pdf"), width = 12, height = 12)
+} else {
+    pdf(paste0(wd, "GSEA.pdf"), width = 12, height = 12)
+}
+heatmap3(res.stats, margins = c(13, 20))
+dev.off()
+```
+
+## Rename clusters to putative populations
+
+#### Use Ref. atlas to compare identities
+```{r}
+Idents(int) <- "seurat_clusters"
+ref <- readRDS(paste0(EXT_REFS, "/BC_atlas/miniatlas.rds"))
+ref <- subset(ref, subset = celltype_major %in% c("Normal Epithelial", "Cancer Epithelial"))
+ref <- UpdateSeuratObject(ref) # convert v3 to v5
+DefaultAssay(ref) <- "RNA"
+ref <- ref |>
+  NormalizeData() |>
+  FindVariableFeatures() |>
+  ScaleData()
+
+anchors <- FindTransferAnchors(reference = ref, query = int)
+predictions <- TransferData(
+  anchorset = anchors,
+  refdata = ref$celltype_minor,
+  verbose = FALSE
+)
+int <- AddMetaData(object = int, metadata = predictions)
+```
+
+#### UMAP and patient distribution bar plot 
+```{r}
+plot_distribution <- function(obj, metadata_column, fill) {
+    # Create a data frame for plotting
+    plot_data <- obj@meta.data %>%
+        dplyr::count(!!rlang::sym(metadata_column), !!rlang::sym(fill)) %>%
+        dplyr::group_by(!!rlang::sym(metadata_column)) %>%
+        dplyr::mutate(percentage = n / sum(n) * 100)
+
+    # Calculate entropy for each subpopulation
+    entropy <- plot_data %>%
+        dplyr::group_by(!!rlang::sym(metadata_column)) %>%
+        dplyr::summarize(entropy = -sum(percentage / 100 * log2(percentage / 100)))
+
+    # Merge entropy with plot_data
+    plot_data <- plot_data %>%
+        dplyr::left_join(entropy, by = metadata_column) %>%
+        dplyr::arrange(entropy)
+
+    # Plot the stacked histogram
+    p <- ggplot(plot_data, aes(x = reorder(!!rlang::sym(metadata_column), entropy), y = percentage, fill = !!rlang::sym(fill))) +
+        geom_bar(stat = "identity") +
+        labs(x = "Subpopulations", y = "Percentage", fill = "Metadata") +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 55, hjust = 1), 
+              plot.margin = margin(t = 10,  # Top margin
+                                   r = 10,  # Right margin
+                                   b = 10,  # Bottom margin
+                                   l = 30)) # Left margin
+    return(p)
+}
+
+p2 <- plot_distribution(int, "seurat_clusters", "patient_ID")
+p3 <- plot_distribution(int, "seurat_clusters", "subtype")
+p4 <- plot_distribution(int, "seurat_clusters", "predicted.id")
+p5 <- p2 + p3 + p4
+
+p1 <- DimPlot(int, group.by = c("seurat_clusters", "predicted.id", "patient_ID", "subtype"), label = TRUE, ncol = 2)
+p <- p1 - p5 + plot_layout(ncol = 2, widths = c(5, 7))
+
+ggsave(
+    filename = paste0(wd, if (renamed) "renamed_" else "", "summary_plot.pdf"),
+    plot = p,
+    width = 30,
+    height = 10
+)
+```
+
+### markers
+```{r}
+Idents(int) <- "seurat_clusters"
+markers <- FindAllMarkers(int, assay = "RNA")
+top_markers <- markers %>%
+  group_by(cluster) %>%
+  top_n(n = 5, wt = avg_log2FC)
+top100 <- markers %>%
+    group_by(cluster) %>%
+    top_n(n = 100, wt = avg_log2FC)
+write.csv(top100, file = paste0(wd, "epi_markers.csv"), row.names = FALSE)
+
+temp <- subset(int, seurat_clusters %in% na.omit(int$seurat_clusters))
+p <- DotPlot(temp, features = unique(top_markers$gene)) + # the subset is to fix a bug related to NAs 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+ggsave(
+    filename = paste0(wd, if (renamed) "renamed_" else "", "markers_dotplot.pdf"),
+    plot = p,
+    width = 10,
+    height = 15
+) 
+```
+
+#### Rename clusters
+
+```{r}
+int@meta.data$EPIclusters_renamed <- int@meta.data$seurat_clusters
+epi.renames <- c(
+    "13" = "LumProgenitors_shared",
+    "10" = "Myoepithelial",
+    "19" = "LumProgenitors_transitional_pat4",
+    "17" = "LumProgenitors_Cycl_pat4", 
+    "18" = "Cancer_Basal/Cycl_pat4",
+    "2" = "Cancer_Basal/Plastic_pat4", 
+    "11" = "Cancer_Transitional_pat4",
+    "9" = "Cancer_Cycl_pat2", 
+    "24" = "Cancer_Cycl_pat2",
+    "5" = "Cancer_LumB_pat2", 
+    "16" = "Cancer_LumB_pat2", 
+    "21" = "Cancer_Basal/LumB_pat2",
+    "22" = "Cancer_Basal_pat9",
+    "14" = "Cancer_Basal/LumA_pat1",
+    "8" = "Cancer_Lum_pat7",
+    "0" = "Cancer_LumA_pat1", 
+    "20" = "Cancer_LumA_pat8", 
+    "6" = "Cancer_LumA_pat1", 
+    "3" = "Cancer_Her2_pat9", 
+    "12" = "Cancer_Basal_stem-like_pat6", 
+    "4" = "Cancer_Basal_stress_pat6", 
+    "23" = "Cancer_Plastic_pat9",
+    "7" = "Cancer_Basal_EMT_pat5", 
+    "1" = "Cancer_Basal_AntigPres_pat5",
+    "15" = "Cancer_Basal_metabolic_pat5"
+)
+int@meta.data$EPIclusters_renamed <- plyr::mapvalues(int@meta.data$EPIclusters_renamed, from = names(epi.renames), to = epi.renames)
+int@meta.data$seurat_clusters <- int@meta.data$EPIclusters_renamed
+```
+
+
+#### add subclusters back to main object
+
+```{r}
+# Add to existing subpopulation class metadata
+int.all$subpopulation[names(int$seurat_clusters)] <- as.character(int$seurat_clusters[names(int$seurat_clusters)])
+```
+
+```{r}
+# saveRDS(int, paste0(rootObj, "epithelial_subpop_analysis.rds"))
+# saveRDS(int.all, paste0(rootObj, "integrated_all_subpopulations.rds"))
+```
+
+we can go back up and regenerate plots now with the renamed clusters. 
+Change renamed to TRUE
+
+### Integrated Spatial mapping 
+
+###### map Vis 55um
+```{r}
+patient_specific <- TRUE
+img_filename <- "patient_specific_subpops_epithelial_vis55.jpg"
+samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
+spls <- list()
+for (sample in samples){
+    vis <- readRDS(paste0(paste0(SPATIAL_RDS, "/breast_cancer/55um/", sample, "/", sample, "_spatial.rds"))
+    patient_ID <- sub("_.*$", "", sample)
+    if (patient_specific == TRUE){
+        ref <- subset(int.all, subset = patient_ID == !!patient_ID)
+    } else {
+        ref <- int.all
+    }
+    
+
+    ## Map w/ semla NNLS
+    ident <- "subpopulation"
+    celltype <- "subpopulation"
+    DefaultAssay(vis) <- "Spatial"
+    DefaultAssay(ref) <- "RNA"
+    vis <- vis |>
+    NormalizeData() |>
+    FindVariableFeatures(nfeatures = 5000) |>
+    ScaleData()
+    ref <- ref |>
+    FindVariableFeatures(nfeatures = 2000) # N used here because we want to be specific. The differences between each cell type are very small, so we want to use a smaller number of features
+    vis <- RunNNLS(vis, singlecell_object = ref, spatial_assay = DefaultAssay(vis), singlecell_assay = DefaultAssay(ref), groups = ident, slot = "data", assay_name = celltype)
+    DefaultAssay(vis) <- celltype
+
+    spls[[sample]] <- vis
+}
+
+sample_plots <- list()
+for (sample in samples) {
+    vis <- spls[[sample]]
+    features = unique(gsub("_", "-", int$EPIclusters_renamed))
+    # Ensure all features are present in the vis object
+    missing_features <- setdiff(features, rownames(vis))
+    vis@assays$subpopulation@data <- rbind(
+    vis@assays$subpopulation@data,
+    Matrix(0, length(missing_features <- setdiff(missing_features, rownames(vis@assays$subpopulation@data))),
+            ncol(vis@assays$subpopulation@data), dimnames = list(missing_features, colnames(vis@assays$subpopulation@data))))
+
+    if (length(vis$sample_id) > 5000) {
+        pt_size <- 1
+    } else if (length(vis$sample_id) < 5000) {
+        pt_size <- 1.6
+    }
+    p <- MapFeatures(vis, features = features, colors = viridis::turbo(11), label_by = "sample_id", pt_size = pt_size, override_plot_dims = TRUE, scale = "shared", ncol = length(features))
+    sample_plots[[sample]] <- p & scale_fill_viridis_c(limits = c(0,1), option = "H")
+}
+# Merge all sample plots into a final plot
+final_plot <- patchwork::wrap_plots(sample_plots, ncol = 1)
+ggsave(paste0(wd, "map/", img_filename), final_plot, height = 5*length(samples), width = 3 * length(features), dpi = 300, limitsize = FALSE)
+```
+
+################################################################## Immune analysis #####################################################################################################
+
+#### load progress
+```{r}
+int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
+samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
+spls <- list()
+for (sample in samples) {
+    output_path <- paste0(paste0(SPATIAL_RDS, "/breast_cancer/55um/", sample, "/", sample, "_3decon.rds")
+    if (file.exists(output_path)) {
+        spls[[sample]] <- readRDS(output_path)
+    }
+}
+```
+
+## Integrate Immune only 
+```{r}
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/subtype_annotation/")
+wd <- paste0(wd, "Immune/")
+merged.im <- subset(int.all, subset = seuratAnnotation_major %in% c("T-cells", "B-cells", "Myeloid", "Plasmablasts"))
+if (!dir.exists(wd)) {
+    dir.create(wd, recursive = TRUE)
+}
+```
+
+### eliminate potentially mislabelled Epithelial and Fibroblasts
+label transfer approach 
+
+```{r}
+cells_before <- ncol(merged.im)
+
+ref <- readRDS(paste0(EXT_REFS, "/BC_atlas/miniatlas.rds"))
+ref <- UpdateSeuratObject(ref) # convert v3 to v5
+DefaultAssay(ref) <- "RNA"
+ref <- ref |>
+  NormalizeData() |>
+  FindVariableFeatures() |>
+  ScaleData()
+
+anchors <- FindTransferAnchors(reference = ref, query = merged.im)
+predictions <- TransferData(
+  anchorset = anchors,
+  refdata = ref$celltype_major,
+  verbose = FALSE
+)
+merged.im <- AddMetaData(object = merged.im, metadata = predictions)
+
+# Filter out cells where predicted.id is Epithelial or Fibroblasts
+merged.im <- subset(merged.im, subset = predicted.id != "CAFs")
+merged.im <- subset(merged.im, subset = predicted.id != "Epithelial")
+
+# "final blow" with marker genes
+# Remove cells with high expression of EPCAM or COL1A1
+merged.im <- subset(merged.im, subset = EPCAM < 1)
+merged.im <- subset(merged.im, subset = COL1A1 < 1)
+
+cells_after <- ncol(merged.im)
+
+cat("Number of cells removed:", cells_before - cells_after, "\n")
+```
+
+#### integrate
+```{r}
+set.seed(1)
+merged.im <- merged.im %>%
+  NormalizeData() %>%
+  FindVariableFeatures() %>%
+  ScaleData() %>%
+  RunPCA() %>%
+  RunUMAP(dims = 1:30)
+# plot pre integration
+ggsave(
+    filename = paste0(wd, "pca_pre_integration.pdf"),
+    plot = DimPlot(merged.im, reduction = "pca", group.by = "sample"),
+    width = 10,
+    height = 10
+)
+ggsave(
+    filename = paste0(wd, "umap_pre_integration.pdf"),
+    plot = DimPlot(merged.im, reduction = "umap", group.by = c("sample", "patient_ID", "subtype", "seuratAnnotation_major"), ncol = 2),
+    width = 30,
+    height = 7
+)
+# integrate
+int <- merged.im %>% 
+    RunHarmony("patient_ID", plot_convergence = TRUE, theta = 0) # min theta since we want to preserve a lot of biological variation
+int <- RunUMAP(int, dims = 1:30, reduction = "harmony") 
+
+# plot post integration
+ggsave(
+    filename = paste0(wd, "pca_post_integration.pdf"),
+    plot = DimPlot(int, reduction = "harmony", group.by = "sample"),
+    width = 10,
+    height = 10
+)
+ggsave(
+    filename = paste0(wd, "umap_post_integration.pdf"),
+    plot = DimPlot(int, reduction = "umap", group.by = c("sample", "patient_ID", "subtype", "seuratAnnotation_major"), ncol = 2),
+    width = 15,
+    height = 10
+)
+```
+
+### Integrated clustering of Immune
+```{r}
+set.seed(1)
+int <- FindNeighbors(int, dims = 1:30)
+for (res in c(0.1, 0.25, .3, .4, .5, 0.8, 1, 1.25)){
+  int <- FindClusters(int, resolution = res, algorithm = 1, verbose = FALSE)
+}
+
+d1 <- DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.1", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.25", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.3", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.4", label = TRUE)
+d2 <- DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.5", label = TRUE) +
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.0.8", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.1", label = TRUE) + 
+    DimPlot(int, reduction = "umap", group.by = "RNA_snn_res.1.25", label = TRUE)
+
+pdf(paste0(wd, "umap_integratedClusters.pdf"), width = 20, height = 20)
+d1 / d2
+dev.off()
+```
+
+```{r}
+renamed <- TRUE
+if (renamed == TRUE) {
+    int@meta.data$seurat_clusters <- int@meta.data$IMclusters_renamed
+} else {
+    int@meta.data$seurat_clusters <- int@meta.data$RNA_snn_res.0.8
+}
+Idents(int) <- "seurat_clusters"
+ggsave(
+    filename = paste0(wd, if (renamed) "renamed_" else "", "umap_post_integration_clusters.pdf"),
+    plot = DimPlot(int, reduction = "umap", group.by = c("patient_ID", "subtype", "seurat_clusters"), ncol = 2, label = TRUE, raster = FALSE),
+    width = 16,
+    height = 12
+)
+```
+
+## Comparing our Immune clusters to literature
+
+WE compare gene expression to our Reference atlas from BC Atlas (Wu et al. 2021).
+The approach used was to select the clustering resolution that allowed the best correlation between clusters and Ref. Atlas "celltype_minor" subpopulations
+
+#### Gene expression similarity heatmap 
+
+```{r}
+nat <- readRDS(paste0(EXT_REFS, "/BC_atlas/miniatlas.rds"))
+nat <- subset(nat, subset = celltype_major %in% c("T-cells", "B-cells", "Myeloid", "Plasmablasts"))
+Idents(int) <- "seurat_clusters"
+Idents(nat) <- "celltype_minor"
+sub_cells <- rownames(int@meta.data)
+int <- FindVariableFeatures(int, selection.method = "vst", nfeatures = 3000)
+int <- ScaleData(int)
+
+genesNat <- VariableFeatures(nat)
+genesSub <- VariableFeatures(int)
+
+natAvg <- AverageExpression(nat, group.by = "celltype_minor", return.seurat = TRUE, assays = "RNA")
+natAvg <- ScaleData(natAvg)
+natData <- FetchData(object = natAvg, vars = genesNat, layer = "scale.data")
+subAvg <- AverageExpression(int, group.by = "seurat_clusters", return.seurat = TRUE, assays = "RNA")
+subAvg <- ScaleData(subAvg)
+subData <- FetchData(object = subAvg, vars = genesSub, layer = "scale.data")
+
+# Extract gene names from each dataset, find common genes, merge datasets
+genes_nat <- colnames(natData)
+genes_sub <- colnames(subData)
+common_genes <- Reduce(intersect, list(genes_nat, genes_sub))
+nat_common <- natData[, common_genes]
+sub_common <- subData[, common_genes]
+
+# Calculate correlation between spatial and combined dataset
+correlation <- cor(t(nat_common), t(sub_common))
+
+# Save the plot generated by pheatmap
+pdf(paste0(wd, if (renamed) "renamed_" else "", "immune_subpop_cluster_comparison_refAtlas.pdf"), width = 10, height = 10)
+heatmap3(correlation, margins = c(16, 10), scale = "none")
+dev.off()
+
+print(paste0("Based on ", length(common_genes), " common genes"))
+```
+
+#### Use Ref. atlas to compare identities
+```{r}
+Idents(int) <- "seurat_clusters"
+ref <- readRDS(paste0(EXT_REFS, "/BC_atlas/miniatlas.rds"))
+ref <- subset(ref, subset = celltype_major %in% c("T-cells", "B-cells", "Myeloid", "Plasmablasts"))
+ref <- UpdateSeuratObject(ref) # convert v3 to v5
+DefaultAssay(ref) <- "RNA"
+ref <- ref |>
+  NormalizeData() |>
+  FindVariableFeatures() |>
+  ScaleData()
+
+anchors <- FindTransferAnchors(reference = ref, query = int)
+predictions <- TransferData(
+  anchorset = anchors,
+  refdata = ref$celltype_minor,
+  verbose = FALSE
+)
+int <- AddMetaData(object = int, metadata = predictions)
+```
+
+#### UMAP and patient distribution bar plot 
+```{r}
+plot_distribution <- function(obj, metadata_column, fill) {
+    # Create a data frame for plotting
+    plot_data <- obj@meta.data %>%
+        dplyr::count(!!rlang::sym(metadata_column), !!rlang::sym(fill)) %>%
+        dplyr::group_by(!!rlang::sym(metadata_column)) %>%
+        dplyr::mutate(percentage = n / sum(n) * 100)
+
+    # Calculate entropy for each subpopulation
+    entropy <- plot_data %>%
+        dplyr::group_by(!!rlang::sym(metadata_column)) %>%
+        dplyr::summarize(entropy = -sum(percentage / 100 * log2(percentage / 100)))
+
+    # Merge entropy with plot_data
+    plot_data <- plot_data %>%
+        dplyr::left_join(entropy, by = metadata_column) %>%
+        dplyr::arrange(entropy)
+
+    # Plot the stacked histogram
+    p <- ggplot(plot_data, aes(x = reorder(!!rlang::sym(metadata_column), entropy), y = percentage, fill = !!rlang::sym(fill))) +
+        geom_bar(stat = "identity") +
+        labs(x = "Subpopulations", y = "Percentage", fill = "Metadata") +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 55, hjust = 1), 
+              plot.margin = margin(t = 10,  # Top margin
+                                   r = 10,  # Right margin
+                                   b = 10,  # Bottom margin
+                                   l = 30)) # Left margin
+    return(p)
+}
+
+p2 <- plot_distribution(int, "seurat_clusters", "patient_ID")
+p3 <- plot_distribution(int, "seurat_clusters", "subtype")
+p4 <- plot_distribution(int, "seurat_clusters", "predicted.id")
+p5 <- p2 + p3 + p4
+
+p1 <- DimPlot(int, group.by = c("seurat_clusters", "predicted.id", "patient_ID", "subtype"), label = TRUE, ncol = 2)
+p <- p1 - p5 + plot_layout(ncol = 2, widths = c(5, 5))
+
+ggsave(
+    filename = paste0(wd, if (renamed) "renamed_" else "", "summary_plot.pdf"),
+    plot = p,
+    width = 30,
+    height = 10
+)
+```
+
+### markers
+Since the immune clusters are more "delicate" and have very distinctive markers, and the gene correlation plot is ambiguous, lets check the cluster marker genes before renaming
+```{r}
+Idents(int) <- "seurat_clusters"
+im.markers <- FindAllMarkers(int, assay = "RNA")
+im.markers %>%
+    group_by(cluster) %>%
+    top_n(n = 5, wt = avg_log2FC) -> top
+im.markers %>%
+    group_by(cluster) %>%
+    top_n(n = 200, wt = avg_log2FC) -> top100
+write.csv(top100, file = paste0(wd, "immune_markers_200.csv"), row.names = FALSE)
+
+# Ensure unique and valid genes
+top <- top %>% distinct(gene, .keep_all = TRUE)
+valid_genes <- intersect(top$gene, rownames(GetAssayData(int, assay = "RNA")))
+
+p <- DotPlot(int, features = valid_genes) + 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+ggsave(paste0(wd, "cluster_markers_dotplot.pdf"), p, width = 10, height = 14)
+```
+
+### plot canonical markers for immune lineages
+```{r}
+Idents(int) <- "seurat_clusters"
+
+# Pan-immune and lineage-specific immune marker genes
+immune_markers <- c(
+  # Pan-immune
+  "PTPRC", "LYZ", "TYROBP", "CD74", "SPI1",
+  
+  # Myeloid (macrophages, monocytes, neutrophils)
+  "CD14", "CD68", "CSF1R", "ITGAM", "S100A8", "S100A9", "MRC1",
+  
+  # Dendritic cells
+  "CD1C", "CLEC9A", "ITGAX", "BATF3", "IRF8", "LAMP3",
+  
+  # T cells
+  "CD3D", "CD3E", "CD8A", "CD4", "TRAC", "IL7R",
+  
+  # B cells and plasma cells
+  "MS4A1", "CD79A", "CD19", "IGHM", "MZB1", "XBP1",
+  
+  # NK cells
+  "NKG7", "GNLY", "KLRD1", "FCGR3A"
+)
+
+# Optional: Add non-immune markers for exclusion
+non_immune_markers <- c(
+  # Epithelial
+  "EPCAM", "KRT8", "KRT18", "KRT5", "CDH1",
+  
+  # Stromal / fibroblast
+  "COL1A1", "COL3A1", "PDGFRA", "DCN", "LUM",
+  
+  # Endothelial
+  "PECAM1", "VWF", "CLDN5", "FLT1"
+)
+
+plots <- list()
+for (genelist in list(immune_markers, non_immune_markers)) {
+    p <- DotPlot(int, features = genelist) + 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+    plots[[paste0("plot_", genelist[1])]] <- p
+}
+# Combine and save all plots
+p3 <- patchwork::wrap_plots(plots, ncol = 1)
+
+p <- p3 + plot_layout(ncol = 3, widths = c(0.6, 0.2, 0.2))
+ggsave(paste0(wd, "cluster_markers_canonical.pdf"), p, width = 25, height = 12)
+
+# Also plot UMAPs for the canonical markers, all in one image
+umap_plots <- list()
+for (genelist in list(immune_markers, non_immune_markers)) {
+    for (gene in genelist) {
+        if (gene %in% rownames(GetAssayData(int, assay = "RNA"))) {
+            p_umap <- FeaturePlot(int, features = gene, reduction = "umap") +
+                ggtitle(gene)
+            umap_plots[[gene]] <- p_umap
+        }
+    }
+}
+# Combine all plots and save as a single PDF
+library(patchwork)
+all_umaps <- wrap_plots(umap_plots, ncol = 6)
+if (renamed) {
+    ggsave(
+        filename = paste0(wd, "renamed_umap_canonical_markers_all.pdf"),
+        plot = all_umaps,
+        width = 24,
+        height = ceiling(length(umap_plots) / 6) * 4
+    )
+} else {
+    ggsave(
+        filename = paste0(wd, "umap_canonical_markers_all.pdf"),
+        plot = all_umaps,
+        width = 24,
+        height = ceiling(length(umap_plots) / 6) * 4
+    )
+}
+```
+
+### Rename clusters
+
+##### CLUSTER 17: Cycling T-cells or Macrophages? 
+Plotting genes to get a differential "diagnosis" 
+```{r}
+# Proliferation markers (shared by cycling cells)
+cycling_genes <- c(
+  "MKI67", "TOP2A", "PCNA", "CDK1", "CDK2",
+  "CDCA3", "CDCA5", "BIRC5", "CENPF", "AURKB",
+  "E2F1", "CDT1", "EXO1", "DONSON", "RFC4"
+)
+
+# T cell markers
+tcell_core <- c("CD3D", "CD3E", "CD3G", "CD2", "CD7", "CD5")
+tcell_cd8 <- c("CD8A", "CD8B", "GZMA", "GZMB", "GZMK", "PRF1", "NKG7")
+tcell_cd4 <- c("CD4", "IL7R", "LEF1", "CCR7")
+tcell_exhaustion <- c("TNFRSF9", "PDCD1", "CTLA4", "LAG3", "HAVCR2", "TIGIT")
+
+tcell_genes <- c(tcell_core, tcell_cd8, tcell_cd4, tcell_exhaustion)
+
+# Macrophage / TAM markers
+macrophage_core <- c("CD68", "CD14", "LYZ", "CSF1R")
+macrophage_m2 <- c("CD163", "MRC1", "MSR1", "TREM2", "STAB1", "MARCO", "F13A1", "FOLR2")
+macrophage_m1 <- c("NOS2", "IL1B", "TNF", "CXCL10")
+tam_metabolic <- c("FASN", "EGFR", "SLC2A1", "FABP5", "CD36", "SPP1", "VCAN")
+
+tam_genes <- c(macrophage_core, macrophage_m2, macrophage_m1, tam_metabolic)
+
+plots <- list()
+for (genelist in list(cycling_genes, tcell_genes, tam_genes)) {
+    p <- DotPlot(int, features = genelist) + 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+    plots[[paste0("plot_", genelist[1])]] <- p
+}
+# Combine and save all plots
+p3 <- patchwork::wrap_plots(plots, ncol = 1)
+
+p <- p3 + plot_layout(ncol = 3, widths = c(1/3, 1/3, 1/3))
+ggsave(paste0(wd, "cluster17_cyclingTAM_vs_cyclingTcell.pdf"), p, width = 25, height = 12)
+```
+
+CONCLUSION:
+    Cluster 17 seems to be clearly cycling T cells given the marker gene expresion.
+
+```{r}
+int@meta.data$IMclusters_renamed <- int@meta.data$seurat_clusters
+im.renames <- c(
+    "0" = "T-cells_atypical", 
+    "1" = "T-cells_CD8_effector", 
+    "8" = "T-cells_CD4_naive", 
+    "4" = "T-cells_CD4_Treg", 
+    "5" = "B-cells_activated", 
+    "9" = "B/T-mixed_patient4", 
+    "10" = "immune_undefined", 
+    "12" = "immune_undefined", 
+    "19" = "immune_undefined", 
+    "17" = "T-cells_cycling", 
+    "18" = "Myeloid_atypical_patient6", 
+    "21" = "cDC2-like", 
+    "20" = "cDC1-like", 
+    "22" = "Neutrophils", 
+    "3" = "Macrophages_monocyte_derived", 
+    "16" = "Macrophages_monocyte_derived",
+    "13" = "pDCs",
+    "14" = "Mast_cells",
+    "6" = "Macrophages_inflammatory",
+    "15" = "Macrophages_interferon",
+    "2" = "Macrophages_immunoregulatory",
+    "11" = "Macrophages_tissue_resident",
+    "7" = "Plasma_cells"
+)
+int@meta.data$IMclusters_renamed <- plyr::mapvalues(int@meta.data$IMclusters_renamed, from = names(im.renames), to = im.renames)
+int@meta.data$seurat_clusters <- int@meta.data$IMclusters_renamed
+```
+
+### Immune cell state markers
+```{r}
+Idents(int) <- "seurat_clusters"
+im.markers <- FindAllMarkers(int, assay = "RNA")
+
+im.markers %>%
+    group_by(cluster) %>%
+    top_n(n = 100, wt = avg_log2FC) -> top100
+write.csv(top100, file = paste0(wd, "renamed_immune_markers_100.csv"), row.names = FALSE)
+
+top <- top100 %>%
+  group_by(cluster) %>%
+  slice_head(n = 2) %>%
+  ungroup()
+
+p <- DotPlot(int, features = unique(top$gene)) + 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 65, hjust = 1, vjust = 1))
+ggsave(paste0(wd, "renamed_markers_dotplot.pdf"), p, width = 8, height = 12)
+```
+
+#### add subclusters back to main object
+
+```{r}
+# Add to existing subpopulation class metadata
+int.all$subpopulation[names(int$seurat_clusters)] <- as.character(int$seurat_clusters[names(int$seurat_clusters)])
+```
+
+```{r}
+# saveRDS(int, paste0(rootObj, "immune_subpop_analysis.rds"))
+# saveRDS(int.all, paste0(rootObj, "integrated_all_subpopulations.rds"))
+```
+
+we can go back up and regenerate plots now with the renamed clusters. 
+Change renamed to TRUE
+
+## GSEA Immune subpopulations
+```{r}
+library(singleseqgset)
+library(msigdbr)
+
+#### Select Gene Set of interest
+# H: hallmark gene sets
+# C1: positional gene sets
+# C2: curated gene sets
+
+category <- "H" # category from Human MSigDB Collections
+h.human <- msigdbr(species="Homo sapiens",category=category)
+subcategory <- ""
+h.human <- h.human %>% filter(gs_subcat == subcategory)
+h.names <- unique(h.human$gs_name)
+h.sets <- vector("list",length=length(h.names))
+names(h.sets) <- h.names
+for (i in names(h.sets)) {
+    h.sets[[i]] <- pull(h.human[h.human$gs_name==i,"gene_symbol"])
+}
+#### Filter out non relevant pathways
+# Define the list of pathways to remove
+remove_pathways <- c(
+  "HALLMARK_BILE_ACID_METABOLISM",         # Liver-specific  
+  "HALLMARK_PANCREAS_BETA_CELLS",          # Pancreatic function  
+  "HALLMARK_SPERMATOGENESIS",              # Testis-specific  
+  "HALLMARK_MYOGENESIS",                   # Muscle development  
+  "HALLMARK_ADIPOGENESIS",                 # Fat cell differentiation  
+  "HALLMARK_FATTY_ACID_METABOLISM",        # General lipid metabolism  
+  "HALLMARK_HEME_METABOLISM",              # Blood-related, not CAF-specific  
+  "HALLMARK_CHOLESTEROL_HOMEOSTASIS",      # Unrelated lipid metabolism  
+  "HALLMARK_PEROXISOME",                   # General cell detox pathway  
+  "HALLMARK_XENOBIOTIC_METABOLISM",        # Detox, not breast cancer-related  
+  "HALLMARK_UV_RESPONSE_DN",               # Skin cancer-related  
+  "HALLMARK_UV_RESPONSE_UP"                # Skin cancer-related  
+)
+# Filter the list, keeping only relevant pathways
+h.sets <- h.sets[!names(h.sets) %in% remove_pathways]
+##### Change names (aesthetic purposes only)
+names(h.sets) <- gsub("HALLMARK_", "", names(h.sets))
+#### Log Fold change
+Idents(int) <- "seurat_clusters"
+int$seurat_clusters <- Idents(int)
+mtx <- GetAssayData(int, assay = "RNA", layer = "data")
+logfc <- logFC(cluster.ids = int@meta.data$seurat_clusters, expr.mat = mtx)
+names(logfc)
+#### Run GSEA
+gse.res <- wmw_gsea(expr.mat=mtx, cluster.cells=logfc[[1]],
+                    log.fc.cluster=logfc[[2]],
+                    gene.sets=h.sets)
+res.stats <- gse.res[["GSEA_statistics"]]
+res.pvals <- gse.res[["GSEA_p_values"]]
+res.pvals <- apply(res.pvals,2,p.adjust,method="fdr") #Correct for multiple comparisons
+res.stats[order(res.stats[,1],decreasing=TRUE)[1:10],] #Top gene sets enriched by z scores
+#Plot the z scores with heatmap3
+if (renamed) {
+    pdf(paste0(wd, "renamed_GSEA.pdf"), width = 12, height = 12)
+} else {
+    pdf(paste0(wd, "GSEA.pdf"), width = 12, height = 12)
+}
+heatmap3(res.stats, margins = c(16, 20))
+dev.off()
+```
+
+### Integrated Spatial mapping 
+
+###### map Vis 55um
+```{r}
+patient_specific <- TRUE
+img_filename <- "patient_specific_subpops_immune_vis55_2000varfeatures.jpg"
+samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
+spls <- list()
+for (sample in samples){
+    vis <- readRDS(paste0(paste0(SPATIAL_RDS, "/breast_cancer/55um/", sample, "/", sample, "_spatial.rds"))
+    patient_ID <- sub("_.*$", "", sample)
+    if (patient_specific == TRUE){
+        ref <- subset(int.all, subset = patient_ID == !!patient_ID)
+    } else {
+        ref <- int.all
+    }
+    
+
+    ## Map w/ semla NNLS
+    ident <- "subpopulation"
+    celltype <- "subpopulation"
+    DefaultAssay(vis) <- "Spatial"
+    DefaultAssay(ref) <- "RNA"
+    vis <- vis |>
+    NormalizeData() |>
+    FindVariableFeatures(nfeatures = 2000) |>
+    ScaleData()
+    ref <- ref |>
+    FindVariableFeatures(nfeatures = 2000) # N used here because we want to be specific. The differences between each cell type are very small, so we want to use a smaller number of features
+    vis <- RunNNLS(vis, singlecell_object = ref, spatial_assay = DefaultAssay(vis), singlecell_assay = DefaultAssay(ref), groups = ident, slot = "data", assay_name = celltype)
+    DefaultAssay(vis) <- celltype
+
+    spls[[sample]] <- vis
+}
+
+sample_plots <- list()
+for (sample in samples) {
+    vis <- spls[[sample]]
+    features = unique(gsub("_", "-", int$IMclusters_renamed))
+    # Ensure all features are present in the vis object
+    missing_features <- setdiff(features, rownames(vis))
+    vis@assays$subpopulation@data <- rbind(
+    vis@assays$subpopulation@data,
+    Matrix(0, length(missing_features <- setdiff(missing_features, rownames(vis@assays$subpopulation@data))),
+            ncol(vis@assays$subpopulation@data), dimnames = list(missing_features, colnames(vis@assays$subpopulation@data))))
+
+    if (length(vis$sample_id) > 5000) {
+        pt_size <- 1
+    } else if (length(vis$sample_id) < 5000) {
+        pt_size <- 1.6
+    }
+    p <- MapFeatures(vis, features = features, colors = viridis::turbo(11), label_by = "sample_id", pt_size = pt_size, override_plot_dims = TRUE, scale = "shared", ncol = length(features))
+    sample_plots[[sample]] <- p & scale_fill_viridis_c(limits = c(0,1), option = "H")
+}
+# Merge all sample plots into a final plot
+final_plot <- patchwork::wrap_plots(sample_plots, ncol = 1)
+ggsave(paste0(wd, "map/", img_filename), final_plot, height = 5*length(samples), width = 3 * length(features), dpi = 300, limitsize = FALSE)
+```
+
+################################################################## Epithelial, Immune and CAF co-analysis ##############################################################################
+
+# Settings
+```{r}
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/final_subpopulations/")
+```
+
+## load 
+```{r}
+int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
+mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
+```
+
+### final cleanup 
+remove the celltypes before that have been deemed low confidence in the initial annotation 
+
+```{r}
+int.all <- subset(int.all, subpopulation != "B-cells")
+int.all <- subset(int.all, subpopulation != "CAFs")
+int.all <- subset(int.all, subpopulation != "T-cells")
+int.all <- subset(int.all, subpopulation != "Myeloid")
+int.all <- subset(int.all, subpopulation != "Plasmablasts")
+int.all <- subset(int.all, subpopulation != "immune_undefined")
+int.all <- subset(int.all, subpopulation != "CAF_unassigned")
+int.all <- subset(int.all, subpopulation != "apCAF_TNBC-enriched") # downstream analysis showed these were low confidence: possible plasma cell contamination
+```
+
+```{r}
+ggsave(
+    filename = paste0(wd, "umaps/all_subpopulations_UMAP.pdf"),
+    plot = DimPlot(int.all, reduction = "umap", group.by = c("subpopulation", "sample", "subtype"), ncol = 1, label = TRUE, raster = FALSE, repel = TRUE),
+    width = 15,
+    height = 20
+)
+```
+
+## Spatial correlation subpopulations
+
+###### map Vis 55um
+here we map with patient_specific to be more biologically accurate and with patient_specific = FALSE if we want to see 
+which populations map more patient specifically 
+
+```{r}
+patient_specific <- TRUE 
+img_filename <- "patSpec_allSubpops_vis55_2000varfeatures.jpg"
+samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
+spls <- list()
+for (sample in samples){
+    vis <- readRDS(paste0(paste0(SPATIAL_RDS, "/breast_cancer/55um/", sample, "/", sample, "_spatial.rds"))
+    patient_ID <- sub("_.*$", "", sample)
+    if (patient_specific == TRUE){
+        ref <- subset(int.all, subset = patient_ID == !!patient_ID)
+    } else {
+        ref <- int.all
+    }
+    
+    ## Map w/ semla NNLS
+    ident <- "subpopulation"
+    celltype <- "subpopulation"
+    DefaultAssay(vis) <- "Spatial"
+    DefaultAssay(ref) <- "RNA"
+    vis <- vis |>
+    NormalizeData() |>
+    FindVariableFeatures(nfeatures = 2000) |>
+    ScaleData()
+    ref <- ref |>
+    FindVariableFeatures(nfeatures = 2000) # N used here because we want to be specific. The differences between each cell type are very small, so we want to use a smaller number of features
+    vis <- RunNNLS(vis, singlecell_object = ref, spatial_assay = DefaultAssay(vis), singlecell_assay = DefaultAssay(ref), groups = ident, slot = "data", assay_name = celltype)
+    DefaultAssay(vis) <- celltype
+
+    spls[[sample]] <- vis
+}
+
+features = unique(gsub("_", "-", int.all$subpopulation))
+for (sample in samples) {
+    vis <- spls[[sample]]
+    # Ensure all features are present in the vis object
+    missing_features <- setdiff(features, rownames(vis))
+    vis@assays$subpopulation@data <- rbind(
+    vis@assays$subpopulation@data,
+    Matrix(0.0, length(missing_features <- setdiff(missing_features, rownames(vis@assays$subpopulation@data))),
+            ncol(vis@assays$subpopulation@data), dimnames = list(missing_features, colnames(vis@assays$subpopulation@data))))
+
+    # save
+    spls[[sample]] <- vis
+
+    # if (length(vis$sample_id) > 5000) {
+    #     pt_size <- 0.6
+    # } else if (length(vis$sample_id) < 5000) {
+    #     pt_size <- 1
+    # }
+    # p <- MapFeatures(vis, features = features, colors = viridis::turbo(11), label_by = "sample_id", pt_size = pt_size, override_plot_dims = TRUE, scale = "shared", ncol = 10)
+    # p <- p & scale_fill_viridis_c(limits = c(0,1), option = "H") # make scale 0 to 1
+    # ggsave(
+    #     filename = paste0(wd, "map_decon/", sample, "_", img_filename),
+    #     plot = p,
+    #     height = 3*6,
+    #     width = 3*8,
+    #     dpi = 300,
+    #     limitsize = FALSE
+    # )
+}
+```
+
+###### plot each celltype and sample independently
+```{r}
+autoscale <- FALSE
+folder <- "pat_specific/" # "whole_dataset/" or "pat_specific/"
+img_filename <- "_vis55_2000varfeatures.jpg"
+plot_individual_maps <- function(spls, assay_name, folder, img_filename, autoscale = FALSE, patient_specific = TRUE, wd = ".") {
+    features <- rownames(spls[[1]][[assay_name]])
+    samples <- names(spls)
+    for (sample in samples) {
+        vis <- spls[[sample]]
+        DefaultAssay(vis) <- assay_name
+        subfolder <- if (autoscale) "autoscaled" else "scale_0_to_1"
+        # Choose output folder based on patient_specific
+        outdir <- paste0(wd, "map_decon/individual_maps/", folder, sample, "/", subfolder)
+        if (!dir.exists(outdir)) {
+            dir.create(outdir, recursive = TRUE)
+        }
+        if (length(vis$sample_id) > 5000) {
+            pt_size <- 0.7
+        } else if (length(vis$sample_id) < 5000) {
+            pt_size <- 1.2
+        }
+        for (feature in features){
+            p <- MapFeatures(vis, features = feature, colors = viridis::turbo(11), label_by = "sample_id", pt_size = pt_size, override_plot_dims = TRUE, scale = "shared", ncol = 1)
+            if (!autoscale) {
+                p <- p & scale_fill_viridis_c(limits = c(0,1), option = "H") # make scale 0 to 1
+            }
+            ggsave(
+                filename = paste0(outdir, "/", gsub("/", "_", feature), img_filename),
+                plot = p,
+                height = 4,
+                width = 4,
+                dpi = 600,
+                limitsize = FALSE
+            )
+        }
+    }
+}
+```
+
+##### merge Visium object
+```{r}
+if (length(spls) > 1) {
+    mergedVis <- MergeSTData(spls[[1]], spls[-1])
+} else {
+    mergedVis <- spls[[1]]
+}
+mergedVis <- JoinLayers(mergedVis)
+table(mergedVis$sample_id)
+# saveRDS(mergedVis, paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
+```
+
+```{r}
+spls <- list()
+samples <- unique(mergedVis$sample_id)
+for (sample in samples){
+    spl <- SubsetSTData(mergedVis, expression = sample_id == !!sample)
+    spls[[sample]] <- spl
+}
+```
+
+##### Spatial correlation
+
+###### defining colors for each type
+```{r}
+# Define categories based on patient or subtype information
+categories <- list(
+    "apCAF_classical" = c("shared", "stromal"),
+    "apCAF_TcellMimicry" = c("shared", "stromal"),
+    "iCAF_classical" = c("shared", "stromal"),
+    "iCAF_secretory" = c("shared", "stromal"),
+    "iCAF_lipid-associated" = c("shared", "stromal"),
+    "mCAF_plastic" = c("shared", "stromal"),
+    "mCAF_classical" = c("shared", "stromal"),
+    "mCAF_remodeling" = c("shared", "stromal"),
+    "ifnCAF_interferon" = c("shared", "stromal"),
+    "mCAF_patient4-specific" = c("patient4", "stromal"),
+    "vCAF" = c("shared", "stromal"),
+    "Adipocytes" = c("shared", "stromal"),
+    "PVL" = c("shared", "stromal"),
+    "Endothelial" = c("shared", "stromal"),
+    "LumProgenitors_shared" = c("shared", "epithelial"),
+    "Myoepithelial" = c("shared", "epithelial"),
+    "LumProgenitors_transitional_pat4" = c("patient4", "epithelial"),
+    "LumProgenitors_Cycl_pat4" = c("patient4", "epithelial"),
+    "Cancer_Basal/Cycl_pat4" = c("patient4", "epithelial"),
+    "Cancer_Basal/Plastic_pat4" = c("patient4", "epithelial"),
+    "Cancer_Transitional_pat4" = c("patient4", "epithelial"),
+    "Cancer_Cycl_pat2" = c("patient2", "epithelial"),
+    "Cancer_LumB_pat2" = c("patient2", "epithelial"),
+    "Cancer_Basal/LumB_pat2" = c("patient2", "epithelial"),
+    "Cancer_Basal_pat9" = c("patient9", "epithelial"),
+    "Cancer_Basal/LumA_pat1" = c("patient1", "epithelial"),
+    "Cancer_Lum_pat7" = c("patient7", "epithelial"),
+    "Cancer_LumA_pat1" = c("patient1", "epithelial"),
+    "Cancer_LumA_pat8" = c("patient8", "epithelial"),
+    "Cancer_Her2_pat9" = c("patient9", "epithelial"),
+    "Cancer_Basal_stem-like_pat6" = c("patient6", "epithelial"),
+    "Cancer_Basal_stress_pat6" = c("patient6", "epithelial"),
+    "Cancer_Plastic_pat9" = c("patient9", "epithelial"),
+    "Cancer_Basal_EMT_pat5" = c("patient5", "epithelial"),
+    "Cancer_Basal_AntigPres_pat5" = c("patient5", "epithelial"),
+    "Cancer_Basal_metabolic_pat5" = c("patient5", "epithelial"),
+    "T-cells_atypical" = c("shared", "immune"),
+    "T-cells_CD8_effector" = c("shared", "immune"),
+    "T-cells_CD4_naive" = c("shared", "immune"),
+    "T-cells_CD4_Treg" = c("shared", "immune"),
+    "B-cells_activated" = c("shared", "immune"),
+    "B/T-mixed_patient4" = c("patient4", "immune"),
+    "immune_undefined" = c("shared", "immune"),
+    "T-cells_cycling" = c("shared", "immune"),
+    "Myeloid_atypical_patient6" = c("patient6", "immune"),
+    "cDC2-like" = c("shared", "immune"),
+    "cDC1-like" = c("shared", "immune"),
+    "Neutrophils" = c("shared", "immune"),
+    "Macrophages_monocyte_derived" = c("shared", "immune"),
+    "pDCs" = c("shared", "immune"),
+    "Mast_cells" = c("shared", "immune"),
+    "Macrophages_inflammatory" = c("shared", "immune"),
+    "Macrophages_interferon" = c("shared", "immune"),
+    "Macrophages_immunoregulatory" = c("shared", "immune"),
+    "Macrophages_tissue_resident" = c("shared", "immune"),
+    "Plasma_cells" = c("shared", "immune")
+)
+
+celltypes_collapsed <- c(
+  # --- Stromal (unchanged) ---
+  "apCAF_classical" = "apCAF_classical",
+  "apCAF_TcellMimicry" = "apCAF_TcellMimicry",
+  "iCAF_classical" = "iCAF_classical",
+  "iCAF_secretory" = "iCAF_secretory",
+  "iCAF_lipid-associated" = "iCAF_lipid-associated",
+  "mCAF_plastic" = "mCAF_plastic",
+  "mCAF_classical" = "mCAF_classical",
+  "mCAF_remodeling" = "mCAF_remodeling",
+  "ifnCAF_interferon" = "ifnCAF_interferon",
+  "mCAF_patient4-specific" = "mCAF_patient4-specific",
+  "vCAF" = "vCAF",
+  "Adipocytes" = "Adipocytes",
+  "PVL" = "PVL",
+  "Endothelial" = "Endothelial",
+
+  # --- Epithelial (collapsed) ---
+  "Cancer_Basal/Cycl_pat4" = "Cancer_Basal",
+  "Cancer_Basal/Plastic_pat4" = "Cancer_Basal",
+  "Cancer_Transitional_pat4" = "Cancer_Transitional",
+  "Cancer_Cycl_pat2" = "Cancer_Cycling",
+  "Cancer_LumB_pat2" = "Cancer_LumB",
+  "Cancer_Basal/LumB_pat2" = "Cancer_LumB",
+  "Cancer_Basal_pat9" = "Cancer_Basal",
+  "Cancer_Basal/LumA_pat1" = "Cancer_LumA",
+  "Cancer_Lum_pat7" = "Cancer_Lum",
+  "Cancer_LumA_pat1" = "Cancer_LumA",
+  "Cancer_LumA_pat8" = "Cancer_LumA",
+  "Cancer_Her2_pat9" = "Cancer_Her2",
+  "Cancer_Basal_stem-like_pat6" = "Cancer_Basal",
+  "Cancer_Basal_stress_pat6" = "Cancer_Basal",
+  "Cancer_Plastic_pat9" = "Cancer_Other",
+  "Cancer_Basal_EMT_pat5" = "Cancer_Basal",
+  "Cancer_Basal_AntigPres_pat5" = "Cancer_Basal",
+  "Cancer_Basal_metabolic_pat5" = "Cancer_Basal",
+  "LumProgenitors_shared" = "LumProgenitors",
+  "Myoepithelial" = "Myoepithelial",
+  "LumProgenitors_transitional_pat4" = "LumProgenitors_transitional",
+  "LumProgenitors_Cycl_pat4" = "LumProgenitors",
+
+  # --- Immune (unchanged) ---
+  "T-cells_atypical" = "T-cells_atypical",
+  "T-cells_CD8_effector" = "T-cells_CD8_effector",
+  "T-cells_CD4_naive" = "T-cells_CD4_naive",
+  "T-cells_CD4_Treg" = "T-cells_CD4_Treg",
+  "B-cells_activated" = "B-cells_activated",
+  "B/T-mixed_patient4" = "B/T-mixed_patient4",
+  "immune_undefined" = "immune_undefined",
+  "T-cells_cycling" = "T-cells_cycling",
+  "Myeloid_atypical_patient6" = "Myeloid_atypical_patient6",
+  "cDC2-like" = "cDC2-like",
+  "cDC1-like" = "cDC1-like",
+  "Neutrophils" = "Neutrophils",
+  "Macrophages_monocyte_derived" = "Macrophages_monocyte_derived",
+  "pDCs" = "pDCs",
+  "Mast_cells" = "Mast_cells",
+  "Macrophages_inflammatory" = "Macrophages_inflammatory",
+  "Macrophages_interferon" = "Macrophages_interferon",
+  "Macrophages_immunoregulatory" = "Macrophages_immunoregulatory",
+  "Macrophages_tissue_resident" = "Macrophages_tissue_resident",
+  "Plasma_cells" = "Plasma_cells"
+)
+# Create a mapping from collapsed names to specificity and celltype
+categories_collapsed <- list(
+    # Stromal
+    "apCAF_classical" = c("NA", "stromal"),
+    "apCAF_TcellMimicry" = c("NA", "stromal"),
+    "iCAF_classical" = c("NA", "stromal"),
+    "iCAF_secretory" = c("NA", "stromal"),
+    "iCAF_lipid-associated" = c("NA", "stromal"),
+    "mCAF_plastic" = c("NA", "stromal"),
+    "mCAF_classical" = c("NA", "stromal"),
+    "mCAF_remodeling" = c("NA", "stromal"),
+    "ifnCAF_interferon" = c("NA", "stromal"),
+    "mCAF_patient4-specific" = c("NA", "stromal"),
+    "vCAF" = c("NA", "stromal"),
+    "Adipocytes" = c("NA", "stromal"),
+    "PVL" = c("NA", "stromal"),
+    "Endothelial" = c("NA", "stromal"),
+
+    # Epithelial
+    "Cancer_Basal" = c("NA", "epithelial"),
+    "Cancer_Transitional" = c("NA", "epithelial"),
+    "Cancer_Cycling" = c("NA", "epithelial"),
+    "Cancer_LumB" = c("NA", "epithelial"),
+    "Cancer_LumA" = c("NA", "epithelial"),
+    "Cancer_Lum" = c("NA", "epithelial"),
+    "Cancer_Her2" = c("NA", "epithelial"),
+    "Cancer_Other" = c("NA", "epithelial"),
+    "LumProgenitors" = c("NA", "epithelial"),
+    "LumProgenitors_transitional" = c("NA", "epithelial"),
+    "Myoepithelial" = c("NA", "epithelial"),
+
+    # Immune
+    "T-cells_atypical" = c("NA", "immune"),
+    "T-cells_CD8_effector" = c("NA", "immune"),
+    "T-cells_CD4_naive" = c("NA", "immune"),
+    "T-cells_CD4_Treg" = c("NA", "immune"),
+    "B-cells_activated" = c("NA", "immune"),
+    "B/T-mixed_patient4" = c("NA", "immune"),
+    "immune_undefined" = c("NA", "immune"),
+    "T-cells_cycling" = c("NA", "immune"),
+    "Myeloid_atypical_patient6" = c("NA", "immune"),
+    "cDC2-like" = c("NA", "immune"),
+    "cDC1-like" = c("NA", "immune"),
+    "Neutrophils" = c("NA", "immune"),
+    "Macrophages_monocyte_derived" = c("NA", "immune"),
+    "pDCs" = c("NA", "immune"),
+    "Mast_cells" = c("NA", "immune"),
+    "Macrophages_inflammatory" = c("NA", "immune"),
+    "Macrophages_interferon" = c("NA", "immune"),
+    "Macrophages_immunoregulatory" = c("NA", "immune"),
+    "Macrophages_tissue_resident" = c("NA", "immune"),
+    "Plasma_cells" = c("NA", "immune")
+)
+# Convert underscores to dashes in all collapsed category names
+names(categories_collapsed) <- gsub("_", "-", names(categories_collapsed))
+
+# Convert underscores to dashes in all category names
+names(categories) <- gsub("_", "-", names(categories))
+names(categories_collapsed) <- gsub("_", "-", names(categories_collapsed))
+
+# Define corresponding colors for each category
+category_colors <- list(
+    specificity = c(
+        "shared" = "#27AE60",
+        "patient1" = "#F1C40F",
+        "patient2" = "#1ABC9C",
+        "patient4" = "#E67E22",
+        "patient5" = "#F39C12",
+        "patient6" = "#C0392B",
+        "patient7" = "#16A085",
+        "patient8" = "#34495E",
+        "patient9" = "#6C3483"
+    )
+    ,
+    celltype = c(
+        "immune" = "#3498DB",
+        "stromal" = "#2ECC71",
+        "epithelial" = "#E74C3C"
+    )
+)
+# Define colors for collapsed categories (celltype and specificity)
+category_colors_collapsed <- list(
+    specificity = c(
+        "NA" = "NA"
+    ),
+    celltype = c(
+        "immune" = "#3498DB",
+        "stromal" = "#2ECC71",
+        "epithelial" = "#E74C3C"
+    )
+)
+```
+
+###### per patient 
+```{r}
+for (spl in spls){
+    DefaultAssay(spl) <- "subpopulation"
+    data <- FetchData(spl, rownames(spl)) %>% 
+        as.data.frame() %>%
+        select(where(~ sum(., na.rm = TRUE) > 0))  # Add na.rm=TRUE to handle NAs
+
+    cor_matrix <- cor(data, method = "spearman", use = "pairwise.complete.obs")
+    diag(cor_matrix) <- NA
+
+    valid_rows <- intersect(rownames(cor_matrix), names(categories))
+    specificity_pt <- do.call(rbind, lapply(categories[valid_rows], function(x) {
+        c(category_colors$specificity[x[1]], category_colors$celltype[x[2]])
+    }))
+
+    # Generate heatmap and save as PDF
+    pdf(paste0(wd, "correlation/", unique(spl$sample_id), "_correlation_spatial_finalSubpopulations.pdf"), width = 11, height = 8)
+    heatmap3(
+        cor_matrix, 
+        margins = c(16, 16), 
+        symm = TRUE,
+        RowSideColors = specificity_pt[, 2:1],  
+        ColSideColors = specificity_pt,
+        col = colorRampPalette(c("blue", "white", "red"))(20), 
+        balanceColor = TRUE, 
+        RowSideLabs = c("CellType", "Specificity"),  # Label for RowSideColors
+        ColSideLabs = c("Specificity", "CellType")  # Label for ColSideColors
+    )
+
+    legend(
+    "topright",  
+    legend = names(category_colors$specificity),  
+    fill = category_colors$specificity,  
+    title = "Specificity",
+    inset = c(0, 0)
+    )
+    legend(
+    "topright",  
+    legend = names(category_colors$celltype),  
+    fill = category_colors$celltype,  
+    title = "CellType",
+    inset = c(0, 0.4)
+    )
+    dev.off()
+    # Save correlation matrix as CSV
+    write.csv(cor_matrix, file = paste0(wd, "correlation/", unique(spl$sample_id), "_correlation_matrix.csv"), row.names = TRUE)
+}
+
+```
+
+### collapse epithelial to broad categories 
+In order to study correlations of shared signatures across patients, we collapse the epithelial categories to broader categories
+in order to generate more robust correlations. 
+```{r}
+# Collapse subpopulation proportions according to celltypes_collapsed mapping
+subpop_mat <- GetAssayData(mergedVis, assay = "subpopulation", slot = "data")
+collapsed_names <- celltypes_collapsed[rownames(subpop_mat)]
+collapsed_names <- as.character(collapsed_names)
+# Remove any NA mappings
+valid_idx <- !is.na(collapsed_names)
+subpop_mat <- subpop_mat[valid_idx, , drop = FALSE]
+collapsed_names <- collapsed_names[valid_idx]
+
+# Aggregate (sum) rows by collapsed category
+collapsed_mat <- as.matrix(rowsum(as.matrix(subpop_mat), group = collapsed_names))
+# Ensure order is consistent and unique
+collapsed_mat <- collapsed_mat[unique(collapsed_names), , drop = FALSE]
+
+# Add as new assay
+mergedVis[["subpopulation_collapsed"]] <- CreateAssayObject(data = collapsed_mat)
+
+# split 
+spls <- list()
+samples <- unique(mergedVis$sample_id)
+for (sample in samples){
+    spl <- SubsetSTData(mergedVis, expression = sample_id == !!sample)
+    spls[[sample]] <- spl
+}
+
+# plot 
+plot_individual_maps(spls, assay_name = "subpopulation_collapsed", folder = "collapsed_epithelial/", img_filename = "_vis55_2000varfeatures_collapsed.jpg", autoscale = FALSE, patient_specific = patient_specific, wd = wd)
+```
+
+##### Subtype specific 
+```{r}
+# Create a vector with matches between sample and subtype
+patient_subtypes <- c(
+    "patient1_55um" = "LuminalA",
+    "patient2_55um" = "LuminalB(ER)",
+    "patient3_55um" = "TNBC",
+    "patient4_55um" = "TNBC",
+    "patient4_HD" = "TNBC",
+    "patient5_55um" = "TNBC",
+    "patient5_HD" = "TNBC",
+    "patient6_55um" = "TNBC",
+    "patient7_55um" = "LuminalB(ER)",
+    "patient8_55um" = "LuminalA",
+    "patient9_55um" = "LuminalB(ER)"
+)
+sbtps <- list()
+subtypes <- unique(patient_subtypes)
+for (subtype in subtypes){
+    sbt <- SubsetSTData(mergedVis, expression = sample_id %in% names(patient_subtypes[patient_subtypes == subtype]))
+    sbtps[[subtype]] <- sbt
+}
+```
+
+```{r}
+for (subtype in subtypes){
+    sbt <- sbtps[[subtype]]
+    DefaultAssay(sbt) <- "subpopulation_collapsed"
+    # Fetch data and compute correlation
+    data <- FetchData(sbt, rownames(sbt)) %>% 
+        as.data.frame() %>%
+        select(where(~ sum(., na.rm = TRUE) > 0))  # Add na.rm=TRUE to handle NAs
+    cor_matrix <- cor(data, method = "spearman", use = "pairwise.complete.obs")
+    diag(cor_matrix) <- NA
+
+    valid_rows <- intersect(rownames(cor_matrix), names(categories_collapsed))
+    specificity_pt <- do.call(rbind, lapply(categories_collapsed[valid_rows], function(x) {
+        c(category_colors_collapsed$specificity[x[1]], category_colors_collapsed$celltype[x[2]])
+    }))
+
+    # Adapt figure size to number of valid_rows (smaller)
+    n_valid <- length(valid_rows)
+    print(n_valid)
+    fig_width <- max(4, min(0.22 * n_valid, 15))
+    fig_height <- max(4, min(0.22 * n_valid, 15))
+
+    # Generate heatmap and save as PDF
+    pdf(paste0(wd, "correlation/", subtype, "_correlation_finalSubpopulations.pdf"), width = fig_width, height = fig_height)
+    heatmap3(
+        cor_matrix, 
+        margins = c(16, 16), 
+        symm = TRUE,
+        RowSideColors = specificity_pt[, 2],  
+        ColSideColors = specificity_pt[, 2],
+        col = colorRampPalette(c("blue", "white", "red"))(100),
+        balanceColor = TRUE, 
+        RowSideLabs = c("CellType"),  # Label for RowSideColors
+        ColSideLabs = c("CellType")  # Label for ColSideColors
+    )
+
+    legend(
+        "topright",  
+        legend = names(category_colors_collapsed$celltype),  
+        fill = category_colors_collapsed$celltype,  
+        title = "CellType",
+        x = "topright",
+        inset = c(0, 0),
+        bty = "n",  # Remove the box from the whole legend
+        cex = 0.6   # Reduce legend text size
+    )
+
+    dev.off()
+    # Save correlation matrix as CSV
+    write.csv(cor_matrix, file = paste0(wd, "correlation/", subtype, "_correlation_matrix.csv"), row.names = TRUE)
+}
+```
+
+##### merged
+```{r}
+DefaultAssay(mergedVis) <- "subpopulation_collapsed"
+
+# Fetch data and compute correlation
+data <- FetchData(mergedVis, rownames(mergedVis)) %>% 
+    as.data.frame() %>%
+    select(where(~ sum(., na.rm = TRUE) > 0))  # Add na.rm=TRUE to handle NAs
+cor_matrix <- cor(data, method = "spearman", use = "pairwise.complete.obs")
+diag(cor_matrix) <- NA
+
+    valid_rows <- intersect(rownames(cor_matrix), names(categories_collapsed))
+    specificity_pt <- do.call(rbind, lapply(categories_collapsed[valid_rows], function(x) {
+        c(category_colors_collapsed$specificity[x[1]], category_colors_collapsed$celltype[x[2]])
+    }))
+
+# Generate heatmap and save as PDF
+pdf(paste0(wd, "correlation/correlation_finalSubpopulations.pdf"), width = 12, height = 8)
+heatmap3(
+    cor_matrix, 
+    margins = c(12, 12), 
+    symm = TRUE,
+    RowSideColors = specificity_pt[, 2],  
+    ColSideColors = specificity_pt[, 2],
+    col = colorRampPalette(c("blue", "white", "red"))(100),
+    balanceColor = TRUE, 
+    RowSideLabs = c("CellType"),  # Label for RowSideColors
+    ColSideLabs = c("CellType")  # Label for ColSideColors
+)
+
+legend(
+    "topright",  
+    legend = names(category_colors_collapsed$celltype),  
+    fill = category_colors_collapsed$celltype,  
+    title = "CellType",
+    x = "topright",
+    inset = c(0, 0),
+    bty = "n",  # Remove the box from the whole legend
+    cex = 1   # Reduce legend text size
+)
+
+dev.off()
+# Save correlation matrix as CSV
+write.csv(cor_matrix, file = paste0(wd, "correlation/correlation_matrix.csv"), row.names = TRUE)
+```
+
+## marker genes
+
+```{r}
+Idents(int.all) <- "subpopulation"
+
+markers <- FindAllMarkers(int.all, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top_markers <- markers %>%
+    group_by(cluster) %>%
+    top_n(n = 2, wt = avg_log2FC)
+top100 <- markers %>%
+    group_by(cluster) %>%
+    top_n(n = 100, wt = avg_log2FC)
+write.csv(top100, file = paste0(wd, "marker_genes/subpopulation_markers_top100.csv"), row.names = FALSE)
+
+p <- DotPlot(int.all, features = unique(top_markers$gene)) + 
+                coord_flip() +
+                scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+                theme(axis.text.x = element_text(angle = 65, hjust = 1, vjust = 1))
+ggsave(paste0(wd, "marker_genes/subpopulation_markers_dotplot.pdf"), p, width = 15, height = 20)
+```
+
+## GSEA
+
+```{r}
+library(singleseqgset)
+library(msigdbr)
+
+#### Select Gene Set of interest
+# H: hallmark gene sets
+# C1: positional gene sets
+# C2: curated gene sets
+
+category <- "H" # category from Human MSigDB Collections
+h.human <- msigdbr(species="Homo sapiens",category=category)
+subcategory <- ""
+h.human <- h.human %>% filter(gs_subcat == subcategory)
+h.names <- unique(h.human$gs_name)
+h.sets <- vector("list",length=length(h.names))
+names(h.sets) <- h.names
+for (i in names(h.sets)) {
+    h.sets[[i]] <- pull(h.human[h.human$gs_name==i,"gene_symbol"])
+}
+#### Filter out non relevant pathways
+# Define the list of pathways to remove
+remove_pathways <- c(
+  "HALLMARK_BILE_ACID_METABOLISM",         # Liver-specific  
+  "HALLMARK_PANCREAS_BETA_CELLS",          # Pancreatic function  
+  "HALLMARK_SPERMATOGENESIS",              # Testis-specific  
+  "HALLMARK_MYOGENESIS",                   # Muscle development  
+  "HALLMARK_ADIPOGENESIS",                 # Fat cell differentiation  
+  "HALLMARK_FATTY_ACID_METABOLISM",        # General lipid metabolism  
+  "HALLMARK_HEME_METABOLISM",              # Blood-related, not CAF-specific  
+  "HALLMARK_CHOLESTEROL_HOMEOSTASIS",      # Unrelated lipid metabolism  
+  "HALLMARK_PEROXISOME",                   # General cell detox pathway  
+  "HALLMARK_XENOBIOTIC_METABOLISM",        # Detox, not breast cancer-related  
+  "HALLMARK_UV_RESPONSE_DN",               # Skin cancer-related  
+  "HALLMARK_UV_RESPONSE_UP"                # Skin cancer-related  
+)
+# Filter the list, keeping only relevant pathways
+h.sets <- h.sets[!names(h.sets) %in% remove_pathways]
+##### Change names (aesthetic purposes only)
+names(h.sets) <- gsub("HALLMARK_", "", names(h.sets))
+#### Log Fold change
+Idents(int.all) <- "subpopulation"
+int.all$seurat_clusters <- Idents(int.all)
+mtx <- GetAssayData(int.all, assay = "RNA", layer = "data")
+logfc <- logFC(cluster.ids = int.all@meta.data$seurat_clusters, expr.mat = mtx)
+names(logfc)
+#### Run GSEA
+gse.res <- wmw_gsea(expr.mat=mtx, cluster.cells=logfc[[1]],
+                    log.fc.cluster=logfc[[2]],
+                    gene.sets=h.sets)
+res.stats <- gse.res[["GSEA_statistics"]]
+res.pvals <- gse.res[["GSEA_p_values"]]
+res.pvals <- apply(res.pvals,2,p.adjust,method="fdr") #Correct for multiple comparisons
+res.stats[order(res.stats[,1],decreasing=TRUE)[1:10],] #Top gene sets enriched by z scores
+#Plot the z scores with heatmap3
+pdf(paste0(wd, "gsea/subpopulations_GSEA.pdf"), width = 15, height = 10)
+heatmap3(res.stats, margins = c(10, 10))
+dev.off()
+```
+
+### Markers and UMAP for major lineages
+```{r}
+# Separate into each lineage and plot UMAP and marker genes
+
+# Use the 'categories' list to assign lineage for each subpopulation
+subpop_names <- as.character(int.all$subpopulation)
+subpop_names_dash <- gsub("_", "-", subpop_names) # replace underscores with dashes
+cell_names <- colnames(int.all)
+lineage_map <- sapply(subpop_names_dash, function(x) {
+    if (!is.null(categories[[x]])) categories[[x]][2] else NA
+})
+names(lineage_map) <- cell_names
+int.all$lineage <- lineage_map
+
+# Define major lineages present in the data
+lineages <- unique(na.omit(int.all$lineage))
+
+# For each lineage: subset, plot UMAP, and marker genes
+for (lin in lineages) {
+        obj <- subset(int.all, subset = lineage == lin)
+        if (ncol(obj) < 10) next  # skip if too few cells
+
+        # UMAP colored by subpopulation
+        p_umap <- DimPlot(obj, reduction = "umap", group.by = "subpopulation", label = TRUE) +
+                ggtitle(paste("UMAP -", lin))
+
+        # Find top marker genes for each subpopulation
+        Idents(obj) <- "subpopulation"
+        markers <- FindAllMarkers(obj, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+        top_markers <- markers %>%
+                group_by(cluster) %>%
+                top_n(n = 3, wt = avg_log2FC)
+        marker_genes <- unique(top_markers$gene)
+
+        # DotPlot for marker genes
+        p_dot <- DotPlot(obj, features = marker_genes) +
+                coord_flip() +
+                scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+                theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+                ggtitle(paste("Markers -", lin))
+
+        # Save plots
+        # ggsave(filename = paste0(wd, "umaps/umap_", lin, ".pdf"), plot = p_umap, width = 8, height = 6)
+        ggsave(filename = paste0(wd, "marker_genes/markers_dotplot_", lin, ".pdf"), plot = p_dot, width = 10, height = 8)
+}
+```
+
+#### manually plot umaps 
+```{r}
+spl <- readRDS(paste0(SN_RDS, "/breast_cancer/cross_patient/caf_subpop_analysis.rds"))
+Idents(spl) <- "seurat_clusters"
+populations <- names(categories)[sapply(categories, function(x) x[2] == "caf")]
+# Ensure populations match the Idents, accounting for underscores/dashes
+idents_levels <- levels(Idents(spl))
+populations <- gsub("_", "-", populations)
+idents_levels <- gsub("_", "-", idents_levels)
+populations <- intersect(populations, idents_levels)
+# Ensure both Idents and populations use dashes
+Idents(spl) <- gsub("_", "-", Idents(spl))
+populations <- gsub("_", "-", populations)
+spl <- subset(spl, idents = populations)
+ggsave(
+    plot = DimPlot(spl, reduction = "umap", group.by = "seurat_clusters", label = FALSE, repel = TRUE)
+     + theme(legend.position = "none"),
+    filename = paste0(wd, "umaps/umap_CAF_subpopulations_nolegend.pdf"),
+    width = 4,
+    height = 4
+)
+```
+
+## Distribution of Patients, subtypes across Subpopulations
+```{r}
+entities <- "subpopulation"
+p1 <- plot_distribution(int.all, entities, "patient_ID")
+p2 <- plot_distribution(int.all, entities, "subtype")
+p <- p1 + p2
+
+ggsave(
+    filename = paste0(wd, "distribution/", entities, "_distribution.pdf"),
+    plot = p,
+    width = 20,
+    height = 4.5
+)
+```
+
+# Network visualization of subpopulation compartments
+```{r}
+library(igraph)
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/final_subpopulations/")
+int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
+mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
+spls <- list()
+samples <- unique(mergedVis$sample_id)
+for (sample in samples){
+    spl <- SubsetSTData(mergedVis, expression = sample_id == !!sample)
+    spls[[sample]] <- spl
+}
+# Create a vector with matches between sample and subtype
+patient_subtypes <- c(
+    "patient1_55um" = "LuminalA",
+    "patient2_55um" = "LuminalB(ER)",
+    "patient3_55um" = "TNBC",
+    "patient4_55um" = "TNBC",
+    "patient4_HD" = "TNBC",
+    "patient5_55um" = "TNBC",
+    "patient5_HD" = "TNBC",
+    "patient6_55um" = "TNBC",
+    "patient7_55um" = "LuminalB(ER)",
+    "patient8_55um" = "LuminalA",
+    "patient9_55um" = "LuminalB(ER)"
+)
+sbtps <- list()
+subtypes <- unique(patient_subtypes)
+for (subtype in subtypes){
+    sbt <- SubsetSTData(mergedVis, expression = sample_id %in% names(patient_subtypes[patient_subtypes == subtype]))
+    sbtps[[subtype]] <- sbt
+}
+```
+
+### generate spatial correlation network
+#### merged
+```{r}
+set.seed(1)
+corMat_network <- read.csv(paste0(wd, "correlation/correlation_matrix.csv"), row.names = 1) |> t()
+corMat_network[corMat_network<0.2] <- 0
+network <- graph_from_adjacency_matrix(corMat_network, weighted=T, mode="undirected", diag=F)
+
+# Count the number of degree for each node:
+deg <- degree(network, mode="all")
+
+# Assign colors based on celltype
+node_names <- V(network)$name
+celltype_colors <- sapply(node_names, function(n) {
+    ct <- categories_collapsed[[n]][2]  # 2nd element is "celltype"
+    if (!is.null(ct) && ct %in% names(category_colors_collapsed$celltype)) {
+        return(category_colors_collapsed$celltype[[ct]])
+    } else {
+        return("#BDC3C7")  # fallback color (light grey)
+    }
+})
+
+# Plot
+layout <- layout_with_fr(network)
+pdf(paste0(wd, "niches/graph/network_visualization.pdf"), width = 5, height = 5)
+par(mar = c(2, 2, 2, 2))  # Broaden right margin
+plot(network,
+    layout = layout,
+    vertex.size = pmax(deg * 2.7, 4),  # minimum size for visibility
+    vertex.color = celltype_colors,
+    vertex.frame.color = "white",
+    vertex.label.cex = 0.7,
+    vertex.label.family = "Helvetica",
+    vertex.label.color = "black",
+    edge.width = pmin(E(network)$weight * 3, 5),  # cap edge width
+    edge.color = rgb(0.6, 0.6, 0.6, 0.3),  # light grey transparent edges
+    main = "All Samples")
+# Add legend for celltype colors
+# legend(
+#     "topright",  
+#     legend = names(category_colors$celltype),  
+#     fill = category_colors$celltype,  
+#     title = "CellType",
+#     inset = c(0, 0)  # Adjust inset further to move it more to the right
+# )
+dev.off()
+```
+
+#### per patient
+Here we dont used the collapsed categories since we want to see the patient specific populations
+```{r}
+sampleNetworks <- list()
+for (spl in spls){
+    DefaultAssay(spl) <- "subpopulation"
+    sample <- unique(spl$sample_id)
+    data <- FetchData(spl, rownames(spl)) %>% 
+        as.data.frame() %>%
+        select(where(~ sum(., na.rm = TRUE) > 0))  # Add na.rm=TRUE to handle NAs
+
+    cor_matrix <- cor(data, method = "spearman", use = "pairwise.complete.obs")
+    diag(cor_matrix) <- NA
+
+    set.seed(1)
+    corMat_network <- cor_matrix |> t()
+    corMat_network[corMat_network<0.15] <- 0
+    network <- graph_from_adjacency_matrix(corMat_network, weighted=T, mode="undirected", diag=F)
+
+    # Count the number of degree for each node:
+    deg <- degree(network, mode="all")
+    
+    # Assign colors based on celltype
+    node_names <- V(network)$name
+    celltype_colors <- sapply(node_names, function(n) {
+        ct <- categories[[n]][2]  # 2nd element is "celltype"
+        if (!is.null(ct) && ct %in% names(category_colors$celltype)) {
+            return(category_colors$celltype[[ct]])
+        } else {
+            return("#BDC3C7")  # fallback color (light grey)
+        }
+    })
+    
+    # Plot
+    layout <- layout_with_fr(network)
+    pdf(paste0(wd, "niches/graph/network_", sample, ".pdf"), width = 5, height = 5)
+    par(mar = c(2, 2, 2, 2))  # Broaden right margin
+    plot(network,
+        layout = layout,
+        vertex.size = pmax(deg * 2.7, 4),  # minimum size for visibility
+        vertex.color = celltype_colors,
+        vertex.frame.color = "white",
+        vertex.label.cex = 0.7,
+        vertex.label.family = "Helvetica",
+        vertex.label.color = "black",
+        edge.width = pmin(E(network)$weight * 3, 5),  # cap edge width
+        edge.color = rgb(0.6, 0.6, 0.6, 0.3),  # light grey transparent edges
+        main = paste(sample))
+    # Add legend for celltype colors
+    # legend(
+    #     "topright",  
+    #     legend = names(category_colors$celltype),  
+    #     fill = category_colors$celltype,  
+    #     title = "CellType",
+    #     inset = c(0, 0)  # Adjust inset further to ensure it fits within the plot area
+    # )
+    dev.off()
+
+    sampleNetworks[[sample]] <- network
+}
+```
+
+#### per subtype
+```{r}
+subtypeNetworks <- list()
+for (subtype in subtypes){
+    set.seed(1)
+    corMat_network <- read.csv(paste0(wd, "correlation/",subtype, "_correlation_matrix.csv"), row.names = 1) |> t()
+    corMat_network[corMat_network<0.2] <- 0
+    network <- graph_from_adjacency_matrix(corMat_network, weighted=T, mode="undirected", diag=F)
+
+    # Count the number of degree for each node:
+    deg <- degree(network, mode="all")
+
+    # Assign colors based on celltype
+    node_names <- V(network)$name
+    celltype_colors <- sapply(node_names, function(n) {
+        ct <- categories_collapsed[[n]][2]  # 2nd element is "celltype"
+        if (!is.null(ct) && ct %in% names(category_colors_collapsed$celltype)) {
+            return(category_colors_collapsed$celltype[[ct]])
+        } else {
+            return("#BDC3C7")  # fallback color (light grey)
+        }
+    })
+
+    subtypeNetworks[[subtype]] <- network
+    
+    # Plot
+    layout <- layout_with_fr(network)
+    pdf(paste0(wd, "niches/graph/network_", subtype, ".pdf"), width = 5, height = 5)
+    par(mar = c(2, 2, 2, 2))  # Broaden right margin
+    plot(network,
+        layout = layout,
+        vertex.size = pmax(deg * 2.7, 4),  # minimum size for visibility
+        vertex.color = celltype_colors,
+        vertex.frame.color = "white",
+        vertex.label.cex = 0.7,
+        vertex.label.family = "Helvetica",
+        vertex.label.color = "black",
+        edge.width = pmin(E(network)$weight * 3, 5),  # cap edge width
+        edge.color = rgb(0.6, 0.6, 0.6, 0.3),  # light grey transparent edges
+        main = paste(subtype))
+    # Add legend for celltype colors
+    # legend(
+    #     "topright",  
+    #     legend = names(category_colors$celltype),  
+    #     fill = category_colors$celltype,  
+    #     title = "CellType",
+    #     inset = c(0, 0)  # Adjust inset further to ensure it fits within the plot area
+    # )
+    dev.off()
+}
+```
+
+### Cluster based on graph connectivity - louvain algorithm
+```{r}
+recolored <- TRUE # we go back to these plots after recoloring in downstream analysis 
+cluster <- FALSE
+networks <- sampleNetworks  # Choose which networks to cluster
+# Function to get clusters for each subtype network
+if (cluster) {
+    get_clusters <- function(network) {
+    cl <- cluster_louvain(network, resolution = 1.7)
+    memb <- membership(cl)
+    # memb[!(memb %in% which(sizes(cl) > 1))] <- NA
+    memb
+    }
+    # Apply clustering to each subtype network
+    sample_clusters <- lapply(networks, get_clusters)
+}
+
+# Add sample clusters to graph plot
+for (sample in names(sample_clusters)) {
+    network <- networks[[sample]]
+    membership <- sample_clusters[[sample]]
+
+        # Assign colors based on niche membership and subtype
+        cluster_colors <- sapply(names(membership), function(n) {
+            if (recolored) {
+                niche_name <- paste0(sample, "-niche", membership[n])
+                color_map <- niche_color_maps[[sample]]
+                # Convert underscores to dashes in sample for matching
+                sample_dash <- gsub("_", "-", sample)
+                niche_name_dash <- paste0(sample_dash, "-niche", membership[n])
+                if (!is.null(color_map) && niche_name_dash %in% names(color_map)) {
+                    return(color_map[niche_name_dash])
+                } else {
+                    return("#BDC3C7")  # fallback color (light grey)
+                }
+            } else {
+                rainbow(length(unique(membership)))[membership[n]]
+            }
+        })
+    
+    # Assign shapes based on cell type
+    node_shapes <- sapply(names(membership), function(n) {
+        celltype <- categories[[n]][2]  # Get cell type from categories
+        if (!is.null(celltype) && celltype %in% c("immune", "stromal", "epithelial")) {
+            switch(celltype,
+                   "immune" = "circle",
+                   "stromal" = "square",
+                   "epithelial" = "sphere")
+        } else {
+            "circle"  # Default shape
+        }
+    })
+    
+    # Plot
+    set.seed(1)  # Ensure reproducibility of layout
+    layout <- layout_with_fr(network)
+    if (recolored) {
+        pdf(paste0(wd, "niches/graph/network_", sample, "_colorBy_niche.pdf"), width = 4, height = 4)
+    } else {
+        pdf(paste0(wd, "niches/graph/network_", sample, "_clusters.pdf"), width = 4, height = 4)
+    }
+    par(mar = c(2, 2, 2, 2))  # Broaden right margin
+    plot(network,
+        layout = layout,
+        vertex.size = pmax(degree(network, mode="all") * 2.7, 4),  # minimum size for visibility
+        vertex.color = cluster_colors,
+        vertex.shape = node_shapes,
+        vertex.frame.color = "white",
+        vertex.label.cex = 0.5,
+        vertex.label.family = "Helvetica",
+        vertex.label.color = "black",
+        edge.width = pmin(E(network)$weight * 3, 5),  # cap edge width
+        edge.color = rgb(0.6, 0.6, 0.6, 0.3),  # light grey transparent edges
+        main = paste(sample, "- Spatial Niches"))
+    
+    # # Add legend for clusters (color)
+    # legend(
+    #     "topright",  
+    #     legend = if (recolored) {
+    #         c(paste("Niche", unique(membership[cluster_colors != "#BDC3C7"])), "No niche")
+    #     } else {
+    #         paste("Cluster", unique(membership))
+    #     },
+    #     fill = if (recolored) {
+    #         c(sapply(unique(membership[cluster_colors != "#BDC3C7"]), function(n) niche_colors[paste0(sample, "-niche", n)]), "#BDC3C7")
+    #     } else {
+    #         rainbow(length(unique(membership)))
+    #     },
+    #     title = if (recolored) "Niches" else "Clusters",
+    #     inset = c(0, 0), 
+    #     border = NA,
+    #     cex = 0.3  # Make legend text smaller
+    # )
+    
+    # # Add legend for shapes
+    # legend(
+    #     "bottomright",
+    #     legend = c("Immune", "Stromal", "Epithelial"),
+    #     pch = c(21, 22, 16),  # Corresponding shapes
+    #     title = "Cell Lineage",
+    #     inset = c(0, 0),
+    #     col = "black",
+    #     pt.bg = "white"
+    # )
+    dev.off()
+}
+```
+
+## Create niche scores based on graph clusters
+```{r}
+niches <- list()
+for (sample in names(sample_clusters)) {
+    clusters <- sample_clusters[[sample]]
+    unique_clusters <- unique(clusters)
+    for (cluster_id in unique_clusters) {
+        cluster_members <- names(clusters[clusters == cluster_id])
+        if (length(cluster_members) > 1) {
+            niche_name <- paste0(sample, "_niche", cluster_id)
+            niches[[niche_name]] <- cluster_members
+        }
+    }
+}
+for (sample in names(sample_clusters)) {
+    spl <- spls[[sample]]
+    subpop_df <- as.data.frame(t(GetAssayData(spl, assay = "subpopulation", slot = "data")))
+    niche_scores_list <- list()
+    # Only use niches belonging to this sample
+    sample_niches <- names(niches)[grepl(paste0("^", gsub("_", "-", sample), "-"), gsub("_", "-", names(niches)))]
+    for (niche_name in sample_niches) {
+        cell_types <- niches[[niche_name]]
+        # Filter only the columns in subpop_df that match cell types in this niche
+        common_cell_types <- intersect(cell_types, colnames(subpop_df))
+        if (length(common_cell_types) > 0) {
+            # Extract relevant columns
+            niche_matrix <- subpop_df[, common_cell_types, drop = FALSE]
+            # Compute row-wise mean of proportions
+            niche_score <- rowSums(niche_matrix)
+            # Store the vector
+            niche_scores_list[[niche_name]] <- niche_score
+        } else {
+            warning(paste("No matching cell types found for", niche_name))
+            # Fill with NA if no cell types matched
+            niche_scores_list[[niche_name]] <- rep(NA, nrow(subpop_df))
+        }
+    }
+    # Combine all niche scores into a data frame
+    niche_score_mat <- as.data.frame(niche_scores_list, check.names = FALSE)
+    rownames(niche_score_mat) <- rownames(subpop_df)
+    # Transpose to get niches as rows (optional depending on downstream analysis)
+    niche_score_mat <- t(as.matrix(niche_score_mat))
+    # Z-score normalization across samples for each niche (row-wise)
+    if (nrow(niche_score_mat) > 1) {
+        niche_score_mat <- t(scale(t(niche_score_mat)))  # scales across columns (samples)
+    }
+    spl[["niche_score"]] <- CreateAssayObject(data = niche_score_mat)
+    DefaultAssay(spl) <- "niche_score"
+    spls[[sample]] <- spl
+}
+```
+
+### map niche scores spatially
+###### plot each niche score and sample independently
+```{r}
+autoscale <- TRUE
+img_filename <- "_nicheScore.jpg"
+folder <- "niches/map_score/"
+DefaultAssay(mergedVis) <- "niche_score"
+for (sample in samples) {
+    vis <- spls[[sample]]
+    features <- rownames(vis)
+    subfolder <- if (autoscale) "autoscaled" else "same_scale"
+    if (!dir.exists(paste0(wd, folder, sample, "/", subfolder))) {
+        dir.create(paste0(wd, folder, sample, "/", subfolder), recursive = TRUE)
+    }
+        if (length(vis$sample_id) > 5000) {
+        pt_size <- 0.7
+    } else if (length(vis$sample_id) < 5000) {
+        pt_size <- 1.2
+    }
+    for (feature in features){
+            p <- MapFeatures(vis, features = feature, colors = viridis::turbo(11), label_by = "sample_id", pt_size = pt_size, override_plot_dims = TRUE, scale = "shared", ncol = 1)
+            if (!autoscale) {
+                p <- p & scale_fill_viridis_c(limits = c(-1.5,7), option = "H") # make scale n to n
+            }
+            if (!dir.exists(paste0(wd, folder, sample, "/", subfolder))) {
+                dir.create(paste0(wd, folder, sample, "/", subfolder), recursive = TRUE)
+            }
+            ggsave(
+                filename = paste0(wd, folder, sample, "/", subfolder, "/", gsub("/", "_", feature), img_filename),
+                plot = p,
+                height = 4,
+                width = 4,
+                dpi = 600,
+                limitsize = FALSE
+            )
+    }
+}
+```
+
+## Create discrete Niche labels in spatial data
+
+###### Create maximum value metadata labels for the niche scores and plot labels 
+```{r}
+samples <- unique(mergedVis$sample_id)
+niche_color_maps <- list()  # Store color maps for each sample
+
+for (sample in samples) {
+    vis <- spls[[sample]]
+
+    niche_matrix <- GetAssayData(vis, assay = "niche_score", slot = "data")
+    # Get the feature (row) with the max value per column (spot)
+    max_features <- apply(niche_matrix, 2, function(x) {
+        if (all(is.na(x))) {
+            return(NA)  # No niche passes threshold
+        } else {
+            return(rownames(niche_matrix)[which.max(x)])
+        }
+    })
+    vis$top_niche <- unlist(max_features)
+
+    # Assign colors using rainbow palette based on unique top_niche values
+    membership <- as.factor(vis$top_niche)
+    niche_levels <- levels(membership)
+    color_map <- setNames(rainbow(length(niche_levels)), niche_levels)
+    colors <- color_map[as.character(vis$top_niche)]
+
+    # Save color_map for this sample
+    niche_color_maps[[sample]] <- color_map
+
+    if (length(vis$sample_id) > 5000) {
+        pt_size <- 1.4
+    } else {
+        pt_size <- 2.3
+    }
+    p <- MapLabels(
+            vis,
+            column_name = "top_niche",
+            label_by = "sample_id",
+            colors = color_map,
+            pt_size = pt_size,
+            override_plot_dims = TRUE,
+            drop_na = TRUE
+        ) &
+        theme(legend.position = "right") &
+        guides(fill = guide_legend(override.aes = list(size = 4)))
+    ggsave(
+        filename = paste0(wd, "niches/map_labels/", sample, "_niche_labels.jpg"),
+        plot = p,
+        height = 5,
+        width = 7,
+        dpi = 600,
+        limitsize = FALSE
+    )
+}
+```
+
+### apply niche coloring scheme to patient-specific network plots. ### checkpoint 
+we go back to previous code and set "recolored" to TRUE
+
+## recoloring patient 4
+```{r}
+sample <- "patient4_55um"
+network <- sampleNetworks[[sample]]
+
+# Define your manual color mapping for patient4_55um
+manual_colors_patient4 <- c(
+    "patient4_55um-niche2" = "#3cab17ff",
+    "patient4_55um-niche4" = "#98c9feff",
+    "patient4_55um-niche5" = "#e9124fd3",
+    "patient4_55um-niche8" = "#a146bfff",
+    "patient4_55um-niche7" = "#eb8416ff"
+    # Add or adjust as needed for your actual niche names
+)
+
+# Only plot for patient4_55um
+sample <- "patient4_55um"
+network <- networks[[sample]]
+membership <- sample_clusters[[sample]]
+
+# Assign colors based on manual mapping (fix dash/underscore issue)
+cluster_colors <- sapply(names(membership), function(n) {
+    niche_name <- paste0(sample, "-niche", membership[n])
+    # Replace underscores with dashes for matching
+    niche_name_dash <- gsub("_", "-", niche_name)
+    manual_names_dash <- gsub("_", "-", names(manual_colors_patient4))
+    color_idx <- match(niche_name_dash, manual_names_dash)
+    if (!is.na(color_idx)) {
+        manual_colors_patient4[[color_idx]]
+    } else {
+        "#BDC3C7"
+    }
+})
+
+# Assign shapes based on cell type
+node_shapes <- sapply(names(membership), function(n) {
+    celltype <- categories[[n]][2]
+    if (!is.null(celltype) && celltype %in% c("immune", "stromal", "epithelial")) {
+        switch(celltype,
+               "immune" = "circle",
+               "stromal" = "square",
+               "epithelial" = "sphere")
+    } else {
+        "circle"
+    }
+})
+
+# Plot
+set.seed(1)
+layout <- layout_with_fr(network)
+pdf(paste0(wd, "niches/patient4_only/network_", sample, "_manualColor.pdf"), width = 4, height = 4)
+par(mar = c(2, 2, 2, 2))
+plot(network,
+    layout = layout,
+    vertex.size = pmax(degree(network, mode="all") * 2.7, 4),
+    vertex.color = cluster_colors,
+    vertex.shape = node_shapes,
+    vertex.frame.color = "white",
+    vertex.label.cex = 0.5,
+    vertex.label.family = "Helvetica",
+    vertex.label.color = "black",
+    edge.width = pmin(E(network)$weight * 3, 5),
+    edge.color = rgb(0.6, 0.6, 0.6, 0.3),
+    main = paste(sample, "- Spatial Niches (Manual Colors)")
+)
+dev.off()
+
+# Also plot the spatial distribution of the maximum niche labels using the same manual colors
+vis <- spls[[sample]]
+niche_matrix <- GetAssayData(vis, assay = "niche_score", slot = "data")
+max_features <- apply(niche_matrix, 2, function(x) {
+    if (all(is.na(x))) {
+        return(NA)
+    } else {
+        return(rownames(niche_matrix)[which.max(x)])
+    }
+})
+# Fix dash/underscore issue for top_niche and manual_colors_patient4
+vis$top_niche <- gsub("_", "-", unlist(max_features))
+manual_colors_patient4_dash <- manual_colors_patient4
+names(manual_colors_patient4_dash) <- gsub("_", "-", names(manual_colors_patient4))
+
+if (length(vis$sample_id) > 5000) {
+    pt_size <- 1.4
+} else {
+    pt_size <- 2.3
+}
+p <- MapLabels(
+        vis,
+        column_name = "top_niche",
+        label_by = "sample_id",
+        colors = manual_colors_patient4_dash,
+        pt_size = pt_size,
+        override_plot_dims = TRUE,
+        drop_na = TRUE
+    ) &
+    theme(legend.position = "right") &
+    guides(fill = guide_legend(override.aes = list(size = 4)))
+ggsave(
+    filename = paste0(wd, "niches/patient4_only/", sample, "_niche_labels_manualColor.jpg"),
+    plot = p,
+    height = 5,
+    width = 7,
+    dpi = 600,
+    limitsize = FALSE
+)
+```
+
+################################################################## Subpopulation miniatlas comparison ######################################################################
+
+# load 
+```{r}
+library(igraph)
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/ref_atlas_comparisons/")
+int.all <- readRDS(paste0(rootObj, "integrated_all_subpopulations.rds"))
+mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations.rds"))
+bc_atlas <- readRDS(paste0(EXT_REFS, "/BC_atlas/miniatlas.rds"))
+# split by sample
+spls <- list()
+samples <- unique(mergedVis$sample_id)
+for (sample in samples){
+    spl <- SubsetSTData(mergedVis, expression = sample_id == !!sample)
+    spls[[sample]] <- spl
+}
+```
+
+###### map Vis 55um with ref. atlas
+```{r}
+samples <- unique(int.all$sample[!grepl("HD", int.all$sample)])
+bc_atlas$celltype_subset <- gsub("[ _]", "-", bc_atlas$celltype_subset)
+features = unique(bc_atlas$celltype_subset)
+for (sample in samples){
+    vis <- spls[[sample]]
+    patient_ID <- sub("_.*$", "", sample)
+    ref <- bc_atlas
+    
+    ## Map w/ semla NNLS
+    ident <- "celltype_subset"
+    celltype <- "garvan_subpopulation"
+    DefaultAssay(vis) <- "Spatial"
+    DefaultAssay(ref) <- "RNA"
+    vis <- vis |>
+    NormalizeData() |>
+    FindVariableFeatures(nfeatures = 2000) |>
+    ScaleData()
+    vis <- RunNNLS(vis, singlecell_object = ref, spatial_assay = DefaultAssay(vis), singlecell_assay = DefaultAssay(ref), groups = ident, slot = "data", assay_name = celltype)
+    
+    DefaultAssay(vis) <- celltype
+    spls[[sample]] <- vis
+}
+```
+
+###### plot each celltype and sample independently
+```{r}
+autoscale <- FALSE
+img_filename <- "_refAtlas_vis55_2000varfeatures.jpg"
+for (sample in samples) {
+    vis <- spls[[sample]]
+    DefaultAssay(vis) <- "garvan_subpopulation"
+    subfolder <- if (autoscale) "autoscaled" else "scale_0_to_1"
+    if (!dir.exists(paste0(wd, "map/individual_maps/", sample, "/", subfolder))) {
+        dir.create(paste0(wd, "map/individual_maps/", sample, "/", subfolder), recursive = TRUE)
+    }
+        if (length(vis$sample_id) > 5000) {
+        pt_size <- 0.7
+    } else if (length(vis$sample_id) < 5000) {
+        pt_size <- 1.2
+    }
+    for (feature in features){
+            p <- MapFeatures(vis, features = feature, colors = viridis::turbo(11), label_by = "sample_id", pt_size = pt_size, override_plot_dims = TRUE, scale = "shared", ncol = 1)
+            if (!autoscale) {
+                p <- p & scale_fill_viridis_c(limits = c(0,1), option = "H") # make scale 0 to 1
+            }
+            ggsave(
+                filename = paste0(wd, "map/", "individual_maps/", sample, "/", subfolder, "/", gsub("/", "_", feature), img_filename),
+                plot = p,
+                height = 4,
+                width = 4,
+                dpi = 600,
+                limitsize = FALSE
+            )
+    }
+}
+```
+
+##### merge Visium object
+```{r}
+spls[[3]]@assays <- spls[[3]]@assays[!grepl("^c2l_", names(spls[[3]]@assays))] # these assays are screwing up the merging 
+spls[[4]]@assays <- spls[[4]]@assays[!grepl("^c2l_", names(spls[[4]]@assays))]
+
+mergedVis <- MergeSTData(spls[[1]], spls[-1])
+table(mergedVis$sample_id)
+# saveRDS(mergedVis, paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
+```
+
+##### merged
+```{r}
+DefaultAssay(mergedVis) <- "garvan_subpopulation"
+# Fetch data and compute correlation
+data <- FetchData(mergedVis, rownames(mergedVis)) %>% 
+    as.data.frame() %>%
+    select(where(~ sum(., na.rm = TRUE) > 0))  # Add na.rm=TRUE to handle NAs
+cor_matrix <- cor(data, method = "spearman", use = "pairwise.complete.obs")
+diag(cor_matrix) <- NA
+
+# Generate heatmap and save as PDF
+pdf(paste0(wd, "correlation/correlation_bc_atlas_subset.pdf"), width = 13, height = 10)
+heatmap3(
+    cor_matrix, 
+    margins = c(14, 14), 
+    symm = TRUE,
+    col = colorRampPalette(c("blue", "white", "red"))(20)
+)
+
+dev.off()
+# Save correlation matrix as CSV
+write.csv(cor_matrix, file = paste0(wd, "correlation/correlation_matrix.csv"), row.names = TRUE)
+```
+
+```{r}
+# Create a vector with matches between sample and subtype
+patient_subtypes <- c(
+    "patient1_55um" = "LuminalA",
+    "patient2_55um" = "LuminalB(ER)",
+    "patient3_55um" = "TNBC",
+    "patient4_55um" = "TNBC",
+    "patient4_HD" = "TNBC",
+    "patient5_55um" = "TNBC",
+    "patient5_HD" = "TNBC",
+    "patient6_55um" = "TNBC",
+    "patient7_55um" = "LuminalB(ER)",
+    "patient8_55um" = "LuminalA",
+    "patient9_55um" = "LuminalB(ER)"
+)
+sbtps <- list()
+subtypes <- unique(patient_subtypes)
+for (subtype in subtypes){
+    sbt <- SubsetSTData(mergedVis, expression = sample_id %in% names(patient_subtypes[patient_subtypes == subtype]))
+    sbtps[[subtype]] <- sbt
+}
+```
+
+###### defining colors for each type
+```{r}
+# Define categories based on patient or subtype information
+categories <- list(
+    "B-cells-Memory" = c("NA", "immune"),
+    "B-cells-Naive" = c("NA", "immune"),
+    "CAFs-MSC-iCAF-like-s1" = c("NA", "stromal"),
+    "CAFs-MSC-iCAF-like-s2" = c("NA", "stromal"),
+    "CAFs-Transitioning-s3" = c("NA", "stromal"),
+    "CAFs-myCAF-like-s4" = c("NA", "stromal"),
+    "CAFs-myCAF-like-s5" = c("NA", "stromal"),
+    "Cancer-Basal-SC" = c("NA", "epithelial"),
+    "Cancer-Cycling" = c("NA", "epithelial"),
+    "Cancer-Her2-SC" = c("NA", "epithelial"),
+    "Cancer-LumA-SC" = c("NA", "epithelial"),
+    "Cancer-LumB-SC" = c("NA", "epithelial"),
+    "Cycling-Myeloid" = c("NA", "immune"),
+    "Cycling-PVL" = c("NA", "stromal"),
+    "Endothelial-ACKR1" = c("NA", "stromal"),
+    "Endothelial-CXCL12" = c("NA", "stromal"),
+    "Endothelial-Lymphatic-LYVE1" = c("NA", "stromal"),
+    "Endothelial-RGS5" = c("NA", "stromal"),
+    "Luminal-Progenitors" = c("NA", "epithelial"),
+    "Mature-Luminal" = c("NA", "epithelial"),
+    "Myeloid-c0-DC-LAMP3" = c("NA", "immune"),
+    "Myeloid-c1-LAM1-FABP5" = c("NA", "immune"),
+    "Myeloid-c10-Macrophage-1-EGR1" = c("NA", "immune"),
+    "Myeloid-c11-cDC2-CD1C" = c("NA", "immune"),
+    "Myeloid-c12-Monocyte-1-IL1B" = c("NA", "immune"),
+    "Myeloid-c2-LAM2-APOE" = c("NA", "immune"),
+    "Myeloid-c3-cDC1-CLEC9A" = c("NA", "immune"),
+    "Myeloid-c4-DCs-pDC-IRF7" = c("NA", "immune"),
+    "Myeloid-c5-Macrophage-3-SIGLEC1" = c("NA", "immune"),
+    "Myeloid-c7-Monocyte-3-FCGR3A" = c("NA", "immune"),
+    "Myeloid-c8-Monocyte-2-S100A9" = c("NA", "immune"),
+    "Myeloid-c9-Macrophage-2-CXCL10" = c("NA", "immune"),
+    "Myoepithelial" = c("NA", "epithelial"),
+    "PVL-Differentiated-s3" = c("NA", "stromal"),
+    "PVL-Immature-s1" = c("NA", "stromal"),
+    "PVL-Immature-s2" = c("NA", "stromal"),
+    "Plasmablasts" = c("NA", "immune"),
+    "T-cells-c0-CD4+-CCR7" = c("NA", "immune"),
+    "T-cells-c1-CD4+-IL7R" = c("NA", "immune"),
+    "T-cells-c10-NKT-cells-FCGR3A" = c("NA", "immune"),
+    "T-cells-c11-MKI67" = c("NA", "immune"),
+    "T-cells-c2-CD4+-T-regs-FOXP3" = c("NA", "immune"),
+    "T-cells-c3-CD4+-Tfh-CXCL13" = c("NA", "immune"),
+    "T-cells-c4-CD8+-ZFP36" = c("NA", "immune"),
+    "T-cells-c5-CD8+-GZMK" = c("NA", "immune"),
+    "T-cells-c6-IFIT1" = c("NA", "immune"),
+    "T-cells-c7-CD8+-IFNG" = c("NA", "immune"),
+    "T-cells-c8-CD8+-LAG3" = c("NA", "immune"),
+    "T-cells-c9-NK-cells-AREG" = c("NA", "immune")
+)
+
+# Define corresponding colors for each category
+category_colors <- list(
+    specificity = c(
+"NA"
+    ),
+    celltype = c(
+        "immune" = "#3498DB",
+        "stromal" = "#2ECC71",
+        "epithelial" = "#E74C3C"
+    )
+)
+```
+
+#### per subtype
+```{r}
+recolored <- TRUE # we go back to these plots after recoloring in downstream analysis 
+subtypeNetworks <- list()
+for (subtype in subtypes){
+    sbt <- sbtps[[subtype]]
+    DefaultAssay(sbt) <- "garvan_subpopulation"
+    data <- FetchData(sbt, rownames(sbt)) %>% 
+        as.data.frame() %>%
+        select(where(~ sum(., na.rm = TRUE) > 0))  # Add na.rm=TRUE to handle NAs
+
+    cor_matrix <- cor(data, method = "spearman", use = "pairwise.complete.obs")
+    diag(cor_matrix) <- NA
+
+    set.seed(1)
+    corMat_network <- cor_matrix |> t()
+    corMat_network[corMat_network<0.2] <- 0
+    network <- graph_from_adjacency_matrix(corMat_network, weighted=T, mode="undirected", diag=F)
+
+    # Count the number of degree for each node:
+    deg <- degree(network, mode="all")
+
+    # Assign colors based on celltype
+    node_names <- V(network)$name
+    celltype_colors <- sapply(node_names, function(n) {
+        ct <- categories[[n]][2]  # 2nd element is "celltype"
+        if (!is.null(ct) && ct %in% names(category_colors$celltype)) {
+            return(category_colors$celltype[[ct]])
+        } else {
+            return("#BDC3C7")  # fallback color (light grey)
+        }
+    })
+
+    subtypeNetworks[[subtype]] <- network
+    
+    # Plot
+    layout <- layout_with_fr(network)
+    if (recolored) {
+        pdf(paste0(wd, "niche_analysis/networkFinal_subtype_", subtype, "_colorBy_celltype.pdf"), width = 7, height = 7)
+    } else {
+        pdf(paste0(wd, "correlation/network_visualization_subtype_", subtype, ".pdf"), width = 7, height = 7)
+    }
+    par(mar = c(0, 0, 1, 1))  # Broaden right margin
+    plot(network,
+        layout = layout,
+        vertex.size = pmax(deg * 2.7, 4),  # minimum size for visibility
+        vertex.color = celltype_colors,
+        vertex.frame.color = "white",
+        vertex.label.cex = 0.7,
+        vertex.label.family = "Helvetica",
+        vertex.label.color = "black",
+        edge.width = pmin(E(network)$weight * 3, 5),  # cap edge width
+        edge.color = rgb(0.6, 0.6, 0.6, 0.3),  # light grey transparent edges
+        main = paste(subtype))
+    # Add legend for celltype colors
+    legend(
+        "topright",  
+        legend = names(category_colors$celltype),  
+        fill = category_colors$celltype,  
+        title = "CellType",
+        inset = c(0, 0)  # Adjust inset further to ensure it fits within the plot area
+    )
+    dev.off()
+}
+```
+
+### Cluster based on graph connectivity - louvain algorithm
+```{r}
+# Function to get clusters for each subtype network
+get_clusters <- function(network) {
+    clusters <- cluster_louvain(network)
+    membership <- membership(clusters)
+    return(membership)
+}
+# Apply clustering to each subtype network
+subtype_clusters <- lapply(subtypeNetworks, get_clusters)
+if (recolored == FALSE) {
+    niche_colors <- setNames(rainbow(length(unique(unlist(subtype_clusters)))), unique(unlist(subtype_clusters)))
+}
+# Add subtype clusters to graph plot
+for (subtype in names(subtype_clusters)) {
+    network <- subtypeNetworks[[subtype]]
+    membership <- subtype_clusters[[subtype]]
+    
+    # Assign colors based on niche membership and subtype
+    cluster_colors <- sapply(names(membership), function(n) {
+        if (recolored) {
+            subtype_name <- subtype  # Use the current subtype being iterated
+            niche_name <- paste0(subtype_name, "-niche", membership[n])
+            if (niche_name %in% names(niche_colors) && sum(membership == membership[n]) > 1) {
+                return(niche_colors[niche_name])
+            } else {
+                return("#BDC3C7")  # fallback color (light grey)
+            }
+        } else {
+            if (sum(membership == membership[n]) > 1) {
+                rainbow(length(unique(membership)))[membership[n]]
+            } else {
+                "#BDC3C7"  # fallback color for single-member clusters
+            }
+        }
+    })
+    
+    # Assign shapes based on cell type
+    node_shapes <- sapply(names(membership), function(n) {
+        celltype <- categories[[n]][2]  # Get cell type from categories
+        if (!is.null(celltype) && celltype %in% c("immune", "stromal", "epithelial")) {
+            switch(celltype,
+                   "immune" = "circle",
+                   "stromal" = "square",
+                   "epithelial" = "sphere")
+        } else {
+            "circle"  # Default shape
+        }
+    })
+    
+    # Plot
+    set.seed(1)  # Ensure reproducibility of layout
+    layout <- layout_with_fr(network)
+    if (recolored) {
+        pdf(paste0(wd, "niche_analysis/networkFinal_subtype_", subtype, "_colorBy_niche.pdf"), width = 9, height = 7)
+    } else {
+        pdf(paste0(wd, "correlation/network_visualization_subtype_", subtype, "_clusters.pdf"), width = 9, height = 7)
+    }
+    par(mar = c(0, 0, 1, 2))  # Broaden right margin
+    plot(network,
+        layout = layout,
+        vertex.size = pmax(degree(network, mode="all") * 2.7, 4),  # minimum size for visibility
+        vertex.color = cluster_colors,
+        vertex.shape = node_shapes,
+        vertex.frame.color = "white",
+        vertex.label.cex = 0.7,
+        vertex.label.family = "Helvetica",
+        vertex.label.color = "black",
+        edge.width = pmin(E(network)$weight * 3, 5),  # cap edge width
+        edge.color = rgb(0.6, 0.6, 0.6, 0.3),  # light grey transparent edges
+        main = paste(subtype, "- Spatial Niches"))
+    
+    # Add legend for clusters
+    legend(
+        "topright",  
+        legend = c(paste("Niche", unique(membership[cluster_colors != "#BDC3C7"])), "No niche"),  
+        fill = c(sapply(unique(membership[cluster_colors != "#BDC3C7"]), function(n) niche_colors[paste0(subtype, "-niche", n)]), "#BDC3C7"),  
+        title = "Niches",
+        inset = c(0, 0), 
+        border = NA
+    )
+        # Add legend for shapes
+    legend(
+        "bottomright",
+        legend = c("Immune", "Stromal", "Epithelial"),
+        pch = c(21, 22, 16),  # Corresponding shapes
+        title = "Cell Lineage",
+        inset = c(0, 0),
+        col = "black",
+        pt.bg = "white"
+    )
+    dev.off()
+}
+```
+
+## Create niche scores based on graph clusters
+```{r}
+niches <- list()
+for (subtype in names(subtype_clusters)) {
+    clusters <- subtype_clusters[[subtype]]
+    unique_clusters <- unique(clusters)
+    for (cluster_id in unique_clusters) {
+        cluster_members <- names(clusters[clusters == cluster_id])
+        celltypes <- unique(sapply(cluster_members, function(n) categories[[n]][2]))
+        if (length(celltypes) > 1) {
+            niche_name <- paste0(subtype, "_niche", cluster_id)
+            niches[[niche_name]] <- cluster_members
+        }
+    }
+}
+subpop_df <- as.data.frame(t(GetAssayData(mergedVis, assay = "garvan_subpopulation", slot = "data")))
+niche_scores_list <- list()
+
+# For each niche
+for (niche_name in names(niches)) {
+    cell_types <- niches[[niche_name]]
+    
+    # Filter only the columns in subpop_df that match cell types in this niche
+    common_cell_types <- intersect(cell_types, colnames(subpop_df))
+    
+    if (length(common_cell_types) > 0) {
+        # Extract relevant columns
+        niche_matrix <- subpop_df[, common_cell_types, drop = FALSE]
+        
+        # Compute row-wise sum of log-transformed proportions
+        niche_score <- rowSums(niche_matrix)
+
+        # Store the vector
+        niche_scores_list[[niche_name]] <- niche_score
+    } else {
+        warning(paste("No matching cell types found for", niche_name))
+        # Fill with NA if no cell types matched
+        niche_scores_list[[niche_name]] <- rep(NA, nrow(subpop_df))
+    }
+}
+
+# Combine all niche scores into a data frame
+niche_score_mat <- as.data.frame(niche_scores_list, check.names = FALSE)
+rownames(niche_score_mat) <- rownames(subpop_df)
+
+# Transpose to get niches as rows (optional depending on downstream analysis)
+niche_score_mat <- t(as.matrix(niche_score_mat))
+
+# Z-score normalization across samples for each niche (row-wise)
+niche_score_mat <- t(scale(t(niche_score_mat)))  # scales across columns (samples)
+
+mergedVis[["niche_score_garvan"]] <- CreateAssayObject(data = niche_score_mat)
+```
+
+### map niche scores spatially
+###### plot each niche score and sample independently
+```{r}
+autoscale <- TRUE
+img_filename <- "_nicheScore.jpg"
+DefaultAssay(mergedVis) <- "niche_score_garvan"
+features <- rownames(mergedVis)
+for (sample in samples) {
+    vis <- SubsetSTData(mergedVis, expression = sample_id == !!sample)
+    subfolder <- if (autoscale) "autoscaled" else "scale_0_to_1"
+    if (!dir.exists(paste0(wd, "niche_map/individual_maps/", sample, "/", subfolder))) {
+        dir.create(paste0(wd, "niche_map/individual_maps/", sample, "/", subfolder), recursive = TRUE)
+    }
+        if (length(vis$sample_id) > 5000) {
+        pt_size <- 0.7
+    } else if (length(vis$sample_id) < 5000) {
+        pt_size <- 1.2
+    }
+    for (feature in features){
+            p <- MapFeatures(vis, features = feature, colors = viridis::turbo(11), label_by = "sample_id", pt_size = pt_size, override_plot_dims = TRUE, scale = "shared", ncol = 1)
+            if (!autoscale) {
+                p <- p & scale_fill_viridis_c(limits = c(0,1), option = "H") # make scale 0 to 1
+            }
+            if (!dir.exists(paste0(wd, "niche_analysis/", "map_individual/", sample, "/", subfolder))) {
+                dir.create(paste0(wd, "niche_analysis/", "map_individual/", sample, "/", subfolder), recursive = TRUE)
+            }
+            ggsave(
+                filename = paste0(wd, "niche_analysis/", "map_individual/", sample, "/", subfolder, "/", gsub("/", "_", feature), img_filename),
+                plot = p,
+                height = 4,
+                width = 4,
+                dpi = 600,
+                limitsize = FALSE
+            )
+    }
+}
+```
+
+## Create discrete Niche labels in spatial data
+
+###### define colors for each niche
+```{r}
+niche_colors <- list(
+    # Luminal A - bold cool colors
+    "LuminalA-niche1" = paletteer_d("ggthemes::excel_Blue")[2],
+    "LuminalA-niche3" = paletteer_d("ggthemes::excel_Blue")[3],  
+    "LuminalA-niche4" = paletteer_d("ggthemes::excel_Blue")[4],  
+    "LuminalA-niche12" = paletteer_d("ggthemes::excel_Blue")[5],
+
+    # Luminal B(ER) - bold purples/pinks
+    "LuminalB(ER)-niche1" = paletteer_d("ggthemes::excel_Violet_II")[1],  
+    "LuminalB(ER)-niche3" = paletteer_d("ggthemes::excel_Violet_II")[3], 
+    "LuminalB(ER)-niche4" = paletteer_d("ggthemes::excel_Violet_II")[4], 
+    "LuminalB(ER)-niche5" = paletteer_d("ggthemes::excel_Violet_II")[5], 
+    "LuminalB(ER)-niche9" = paletteer_d("ggthemes::excel_Violet_II")[6],
+
+    # TNBC - bold fiery spectrum
+    "TNBC-niche1" = paletteer_d("RColorBrewer::YlOrRd")[8], 
+    "TNBC-niche3" = paletteer_d("RColorBrewer::YlOrRd")[6], 
+    "TNBC-niche6" = paletteer_d("RColorBrewer::YlOrRd")[7], 
+    "TNBC-niche7" = paletteer_d("RColorBrewer::YlOrRd")[4], 
+    "TNBC-niche8" = paletteer_d("RColorBrewer::YlOrRd")[5]   
+)
+niche_colors <- unlist(niche_colors)
+```
+
+###### Create maximum value metadata labels for the niche scores
+```{r}
+niche_matrix <- GetAssayData(mergedVis, assay = "niche_score_garvan", slot = "data")
+
+# Get the feature (row) with the max value per column (spot)
+max_features <- apply(niche_matrix, 2, function(x) {
+  if (all(is.na(x))) {
+    return(NA)  # No niche passes threshold
+  } else {
+    return(rownames(niche_matrix)[which.max(x)])
+  }
+})
+mergedVis$top_niche_garvan <- unlist(max_features)
+```
+
+##### plot labels
+```{r}
+samples <- unique(mergedVis$sample_id)
+for (sample in samples) {
+    vis <- SubsetSTData(mergedVis, expression = sample_id == !!sample)
+    vis <- LoadImages(vis)
+    if (length(vis$sample_id) > 5000) {
+        pt_size <- 1.4
+    } else {
+        pt_size <- 2.3
+    }
+    p <- MapLabels(vis, column_name = "top_niche_garvan", label_by = "sample_id", colors = niche_colors, pt_size = pt_size, override_plot_dims = TRUE, image_use = "raw", drop_na = TRUE) &
+        theme(legend.position = "right") &
+        guides(fill = guide_legend(override.aes = list(size = 4)))
+    ggsave(
+        filename = paste0(wd, "niche_analysis/map_labels/", sample, "_niche_labels.jpg"),
+        plot = p,
+        height = 5,
+        width = 7,
+        dpi = 600,
+        limitsize = FALSE
+    )
+}
+```
+
+### apply niche coloring scheme to subtype-specific network plots
+we go back to previous code and set "recolored" to TRUE
+
+
+################################################################## HD mapping #####################################################################################################
+
+### plot diff references to HD data for patient 5 
+
+```{r}
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/HD/")
+```
+
+```{r}
+patient <- "patient5"
+ress <- c("s_002um", "s_008um", "s_016um", "s_048um")
+simp <- subset(int.all, subset = patient_ID == patient)
+bc_atlas$subpopulation <- bc_atlas$celltype_subset
+refs <- list(bc_atlas = bc_atlas, SIMPlex = simp)
+
+vis <- readRDS(paste0(SPATIAL_RDS, "/breast_cancer/HD/patient5_HD/patient5_HD_spatial.rds"))
+subset48 <- SubsetSTData(vis, spots = grep("s_048um", colnames(vis), value = TRUE)) 
+    DefaultAssay(subset48) <- "Spatial"
+    subset48 <- subset48 |>
+    NormalizeData() |>
+    FindVariableFeatures(nfeatures = 2000) |>
+    ScaleData()
+var.features <- VariableFeatures(subset48)
+
+resObj <- list()
+for (res in ress) {
+    barcodes_in_range <- grep(paste0("^", res), colnames(vis), value = TRUE)
+    if (res == "s_002um") {
+        barcodes_in_range <- vis@tools$Staffli@meta_data %>%
+            filter(pxl_col_in_fullres >= max(pxl_col_in_fullres * 0.4), # left
+                pxl_col_in_fullres <= max(pxl_col_in_fullres * 0.6), # right 
+                pxl_row_in_fullres >= max(pxl_row_in_fullres * 0.45), # top
+                pxl_row_in_fullres <= max(pxl_row_in_fullres * 0.65)) %>% # bottom
+            pull(barcode) %>%
+            grep(paste0("^", res), ., value = TRUE)
+    }
+    subRes <- SubsetSTData(vis, spots = barcodes_in_range)
+    ## quick check of the frame
+    ggsave(paste0(wd, "map_subtypes/patient5_area.jpg"), MapFeatures(subRes, features = "nFeature_Spatial", override_plot_dims = TRUE, pt_size = 0.5, shape = "tile"))
+    ## Map w/ semla NNLS
+    ident <- "subpopulation" # ident in the reference to use for mapping 
+    DefaultAssay(subRes) <- "Spatial"
+        subRes <- subRes |>
+        NormalizeData() |>
+        ScaleData()
+    VariableFeatures(subRes) <- var.features # we use bin 48's var features due to sparsity of HD 
+
+    for (refName in c("bc_atlas", "SIMPlex")){
+        celltype <- paste0(refName, "_subpopulation_map_", res) # name of the mapping to assign to the visium object
+        ref <- refs[[refName]]
+        ref$subpopulation <- gsub("/", "-", ref$subpopulation)
+        DefaultAssay(subRes) <- "Spatial"
+        subRes <- RunNNLS(subRes, singlecell_object = ref, spatial_assay = DefaultAssay(subRes), singlecell_assay = DefaultAssay(ref), groups = ident, slot = "data", assay_name = celltype)
+        DefaultAssay(subRes) <- celltype
+        features <- unique(gsub("_", "-", rownames(subRes)))
+        features <- features[order(features)]  # Ensure consistent order
+
+        # plot image per resolution per reference per celltype
+        for (feature in features) {
+            p <- MapFeatures(subRes, features = feature, colors = viridis::turbo(11), label_by = "sample_id", override_plot_dims = TRUE, scale = "shared", ncol = 1, shape = "tile", drop_na = TRUE)
+            path <- paste0(wd, "map_subtypes/individual_plots/", res, "/", refName, "/")
+            if (!dir.exists(path)) {
+                dir.create(path, recursive = TRUE)
+            }
+            ggsave(paste0(path, patient, "_", feature, "_mapHD.jpg"), p, height = 4, width = 4, dpi = 300, limitsize = FALSE)
+        }
+    }
+    resObj[[res]] <- subRes
+}
+```
+
+### plot maximum celltype assignment per datapoint @16um
+```{r}
+res <- "s_016um"
+crop <- FALSE
+subRes <- resObj[[res]]
+barcodes_in_range <- grep(paste0("^", res), colnames(subRes), value = TRUE)
+if (crop == TRUE) {
+    barcodes_in_range <- subRes@tools$Staffli@meta_data %>%
+        filter(pxl_col_in_fullres >= max(pxl_col_in_fullres * 0.4), # left
+            pxl_col_in_fullres <= max(pxl_col_in_fullres * 0.6), # right 
+            pxl_row_in_fullres >= max(pxl_row_in_fullres * 0.45), # top
+            pxl_row_in_fullres <= max(pxl_row_in_fullres * 0.65)) %>% # bottom
+        pull(barcode) %>%
+        grep(paste0("^", res), ., value = TRUE)
+}
+subRes <- SubsetSTData(subRes, spots = barcodes_in_range)
+
+for (refName in c("bc_atlas", "SIMPlex")){
+    # Plot each resolution separately
+    features <- unique(gsub("_", "-", rownames(subRes)))
+    features <- features[order(features)]  # Ensure consistent order
+    DefaultAssay(subRes) <- paste0(refName, "_subpopulation_map_s_016um")
+
+        # get max value 
+        mtx <- GetAssayData(subRes, assay = paste0(refName, "_subpopulation_map_s_016um"), slot = "data")
+        max_features <- apply(mtx, 2, function(x) {
+        if (all(is.na(x))) {
+            return(NA)  # No niche passes threshold
+        } else {
+            return(rownames(mtx)[which.max(x)])
+        }
+        })
+        subRes$top_celltype <- unlist(max_features)
+
+    # cols <- paletteer_c("ggthemes::Sunset-Sunrise Diverging", n = length(unique(subRes$top_celltype)))
+    p <- MapLabels(subRes, column_name = "top_celltype", override_plot_dims = TRUE, shape = "tile", drop_na = TRUE) &
+  theme(legend.position = "right")
+    if (crop) {
+        ggsave(paste0(wd, "map_subtypes/top_subtype/", refName,"_", patient , "_discretized_mapHD_zoomed.jpg"), p, height = 10, width = 15, dpi = 300, limitsize = FALSE)
+    } else {
+        ggsave(paste0(wd, "map_subtypes/top_subtype/", refName,"_", patient , "_discretized_mapHD.jpg"), p, height = 10, width = 15, dpi = 300, limitsize = FALSE)
+    }
+}
+```
+
+```{r}
+# saveRDS(resObj, paste0(rootObj, "HD_patient5_decon_atlas_simplex_subpopulations.rds"))
+```
+
+################################################################## Specific analyses #####################################################################################################
+
+# assess composition radial composition of DCIS vs INVASIVE 
+in order to assess the cell state composition of DCIS and INVASIVE areas we 
+do a radial analysis with the segmentation of the DCIS and invasive histopathology 
+labels in patient 4 
+
+
+## load 
+```{r}
+int.all <- readRDS(paste0(SN_RDS, "/breast_cancer/cross_patient/integrated_all_subpopulations.rds"))
+mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
+rootObj <- paste0(SN_RDS, "/breast_cancer/cross_patient/")
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/pat4_invasive_dcis_composition/")
+
+## pat4 only obj
+sample <- "patient4_55um"
+pat4 <- SubsetSTData(mergedVis, sample_id %in% sample)
+```
+
+## population diversity surounding invasive niches 
+
+### load path annotation for TNBC samples
+```{r}
+types <- c("epithelial", "immune", "stroma", "additional")
+annot <- list()
+for (type in types) {
+    csv_path <- file.path(HISTO_DIR, sample, paste0(type, ".csv"))
+    annot[[type]] <- read.csv(csv_path)
+
+    rownames(annot[[type]]) <- annot[[type]]$Barcode
+    annot[[type]] <- annot[[type]][rownames(annot[[type]]) %in% rownames(pat4@meta.data), ]
+    annot[[type]][annot[[type]] == ""] <- NA  # Replace empty cells with NA
+    pat4 <- AddMetaData(pat4, metadata = annot[[type]], col.name = colnames(annot[[type]])[2])
+}
+p_list <- list()
+for (type in types) {
+    p_list[[type]] <- MapLabels(pat4, column_name = type, ncol = 1, label_by = "sample_id", override_plot_dims = TRUE, drop_na = TRUE, pt_size = 0.9)
+}
+p <- patchwork::wrap_plots(p_list, ncol = length(types)) & guides(fill = guide_legend(override.aes = list(size = 6), ncol = 1)) & theme(legend.position = "right")
+ggsave(paste0(wd, sample, "_annotation.jpg"), p, height = 5, width = length(types) * 5, dpi = 600, limitsize = FALSE)
+```
+
+#### merge invasive dense and invasive sparse
+```{r}
+pat4$epithelial[pat4$epithelial %in% c("invasive_dense", "invasive_sparse")] <- "invasive"
+pat4$epithelial[pat4$epithelial == "in_situ_dcis"] <- "dcis"
+```
+
+## radial plot for cancer areas in patient 4 
+
+#### get radial distances for top niche
+```{r}
+groups <- c("invasive", "dcis")
+for (group in groups){
+pat4 <- RadialDistance(pat4, column_name = "epithelial", selected_groups = groups, convert_to_microns = TRUE)
+pat4$rooted_dist_dcis <- sign(pat4$r_dist_dcis)*sqrt(abs(pat4$r_dist_dcis))
+pat4$rooted_dist_invasive <- sign(pat4$r_dist_invasive)*sqrt(abs(pat4$r_dist_invasive))
+p <- MapFeatures(pat4, features = c(paste0("rooted_dist_", groups)), pt_size = 1, ncol = 2, drop_na = TRUE, label_by = "sample_id",
+            colors = RColorBrewer::brewer.pal(n = 11, name = "RdBu") |> rev(),
+            override_plot_dims = TRUE)
+ggsave(
+    filename = paste0(wd, paste0("rooted_distances.jpg")),
+    plot = p,
+    height = 5,
+    width = 10,
+    dpi = 600,
+    limitsize = FALSE
+)
+}
+```
+
+#### radial distance stacked plot 
+
+##### color map
+```{r}
+color_map <- c(
+    # Adipocytes
+    "Adipocytes" = "#A9A9A9",  # gray
+
+    # Cancer populations (vibrant reds)
+    "Cancer-Basal/Plastic-pat4"   = "#FF9900", # orange-red (distinct from deep red)
+    "Cancer-Transitional-pat4"    = "#FF6347", # tomato (distinct, more orange)
+    "Cancer-Basal/Cycl-pat4"      = "#B20000", # deep red
+
+    # Luminal progenitors (oranges)
+    "LumProgenitors-Cycl-pat4"       = "#27AE60", # green
+    "LumProgenitors-transitional-pat4" = "#82E0AA", # light green
+
+    # CAF populations
+    # apCAF (purples)
+    "apCAF-classical"       = "#8E44AD", # purple
+    # iCAF (yellow)
+    "iCAF-classical"        = "#FFE066", # yellow
+    "iCAF-lipid-associated" = "#e4cf7bff", # light yellow
+    "iCAF-secretory"        = "#c4a310ff", # pale yellow
+    # mCAF (deep reds)
+    "mCAF-classical"        = "#800000", # deep maroon
+    "mCAF-patient4-specific" = "#A93226", # deep red
+
+    # Immune (blue tones)
+    "Macrophages-immunoregulatory" = "#6BAED6", # sky blue
+    "Macrophages-inflammatory"     = "#2171B5", # strong medium blue
+    "B/T-mixed-pat4"               = "#9ECAE1", # pale blue
+    "pDCs"                         = "#08519C",  # dark navy blue
+    "B/T-mixed-patient4"           = "#C6DBEF" # very pale blue
+)
+```
+```{r}
+DefaultAssay(pat4) <- "subpopulation"
+sel_genes <- rownames(pat4)
+# subpop_colors <- setNames(rainbow(length(sel_genes)), sel_genes)
+
+for (radial_distance_col in c("r_dist_dcis", "r_dist_invasive")) {
+    pdat <- FetchData(pat4, vars = c(sel_genes, radial_distance_col))
+
+    # Bin the x-axis (radial distance) for smoothing
+    bin_width <- 100  # adjust as needed for smoothing
+    pdat$bin_r_dist <- round(pdat[[radial_distance_col]] / bin_width) * bin_width
+
+    # Prepare long format and filter range
+    pdat_long <- pdat %>%
+        filter(.data[[radial_distance_col]] > -1000 & .data[[radial_distance_col]] < 2000) %>%
+        pivot_longer(all_of(sel_genes), names_to = "variable", values_to = "value")
+
+    # Remove Plasma_cells or Plasma-cells from the variable column
+    pdat_long <- pdat_long %>%
+        filter(!grepl("^Plasma[_-]?cells$", variable, ignore.case = TRUE))
+
+    # Calculate mean for positive and negative distances for each subpopulation
+    diff_df <- pdat_long %>%
+        mutate(region = ifelse(.data[[radial_distance_col]] >= 0, "positive", "negative")) %>%
+        group_by(variable, region) %>%
+        summarise(mean_value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+        pivot_wider(names_from = region, values_from = mean_value, values_fill = 0) %>%
+        mutate(diff = abs(positive - negative))
+
+    # Select top 10 subpopulations with largest difference
+    top_vars <- diff_df %>%
+        arrange(desc(diff)) %>%
+        slice_head(n = 10) %>%
+        pull(variable)
+
+    # Filter long data to only top subpopulations
+    pdat_long_top <- pdat_long %>%
+        filter(variable %in% top_vars) %>%
+        group_by(bin_r_dist, variable) %>%
+        summarise(value = mean(value, na.rm = TRUE), .groups = "drop")
+
+    p <- ggplot(pdat_long_top, aes(x = bin_r_dist, y = value, fill = variable)) +
+        geom_area(position = "fill") +
+        geom_vline(xintercept = 0, linetype = "dashed", color = "#787171", size = 1) +
+        scale_fill_manual(values = color_map, drop = TRUE) + 
+        annotate("text", x = 20, y = 1.02, label = ifelse(radial_distance_col == "r_dist_invasive", "  Invasive border", "  DCIS border"), vjust = 0, hjust = 0, size = 4) +
+        scale_x_continuous(name = "Distance (µm)") +
+        scale_y_continuous(name = "Proportion") +
+        theme_classic()
+
+    ggsave(
+        filename = paste0(wd, "radial_composition_", radial_distance_col, "_stacked.pdf"),
+        plot = p,
+        height = 5,
+        width = 10,
+        dpi = 600,
+        limitsize = FALSE
+    )
+}
+```
+
+# Exploration of patient interesting population gene signatures
+```{r}
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/deg_interesting_celltypes/")   
+```
+
+```{r}
+library(ggrepel)
+# Volcano plot function with gene labels
+volcano_compare <- function(seurat_obj, meta_col, group1, group2, 
+                            logfc.threshold = 0.25, min.pct = 0.1, 
+                            top_n = 10) {
+  
+  # Make sure meta_col exists
+  if (!meta_col %in% colnames(seurat_obj@meta.data)) {
+    stop(paste("Column", meta_col, "not found in metadata."))
+  }
+  
+  # Remove "DEPRECATED-" genes from the RNA assay
+  genes <- rownames(seurat_obj)
+  keep_genes <- !grepl("^DEPRECATED-", genes)
+  seurat_obj <- subset(seurat_obj, features = genes[keep_genes])
+  
+  # Set identities based on metadata column
+  Idents(seurat_obj) <- seurat_obj@meta.data[[meta_col]]
+  
+  # Differential expression between two groups
+  degs <- FindMarkers(
+    seurat_obj,
+    ident.1 = group1,
+    ident.2 = group2,
+    logfc.threshold = logfc.threshold,
+    min.pct = min.pct,
+    test.use = "wilcox"
+  )
+  
+  # Add gene column
+  degs$gene <- rownames(degs)
+  
+  # Select top genes for labeling:
+  # - by adjusted p-value
+  # - by absolute log2FC
+  top_genes <- bind_rows(
+    degs %>% arrange(p_val_adj) %>% head(top_n),
+    degs %>% arrange(desc(abs(avg_log2FC))) %>% head(top_n)
+  ) %>% distinct(gene, .keep_all = TRUE)
+  
+  # Volcano plot
+  p <- ggplot(degs, aes(x = avg_log2FC, y = -log10(p_val_adj))) +
+    geom_point(aes(color = avg_log2FC > 0), alpha = 0.7) +
+    scale_color_manual(values = c("TRUE" = "firebrick", "FALSE" = "royalblue"),
+                       labels = c(group2, group1)) +
+    geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "gray50") +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray50") +
+    geom_text_repel(
+      data = top_genes,
+      aes(label = gene),
+      size = 3.5,
+      max.overlaps = Inf,
+      box.padding = 0.5,
+      point.padding = 0.3,
+      segment.color = "gray50"
+    ) +
+    theme_classic(base_size = 14) +
+    labs(
+      title = paste("Differential expression:", group1, "vs", group2),
+      x = "Average log2 fold change",
+      y = "-log10(adj. p-value)",
+      color = "Enriched in"
+    )
+  
+  return(list(DEGs = degs, plot = p))
+}
+```
+
+```{r}
+result_mcaf <- volcano_compare(int.all, meta_col = "subpopulation",
+                          group2 = "mCAF_classical", group1 = "mCAF_patient4-specific")
+ggsave(paste0(wd, "mCAF_patient4-specific_vs_mCAF_classical_volcano.pdf"), plot = result_mcaf$plot, width = 8, height = 4)
+```
+
+```{r}
+result_lum <- volcano_compare(int.all, meta_col = "subpopulation",
+                          group2 = "LumProgenitors_shared", group1 = "LumProgenitors_transitional_pat4")
+ggsave(paste0(wd, "LumProgenitors_pat4_volcano.pdf"), plot = result_lum$plot, width = 8, height = 4)
+```
+
+```{r}
+result_icaf <- volcano_compare(int.all, meta_col = "subpopulation",
+                          group2 = "iCAF_classical", group1 = "iCAF_secretory")
+ggsave(paste0(wd, "iCAF_secretory_volcano.pdf"), plot = result_icaf$plot, width = 8, height = 4)
+```
+
+Based on these marker gene profiles, we draw potential interactions in pat4 
+worth to explore further in HD. the interaction of secretory iCAF with 
+a potential transitional profile of luminal progenitors, and 
+intra-invasive mCAFs that are patient specific. 
+The border like profile of apCAFs is also worth investigating in HD.
+
+# Spatially informed ligand receptor analysis iCAF secretory and luminal progenitors transitional
+```{r}
+library(celltalker)
+int.all <- readRDS(paste0(SN_RDS, "/breast_cancer/cross_patient/integrated_all_subpopulations.rds"))
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/ligand_receptor/")
+```
+
+#### patient 4 only 
+```{r}
+pat4_sn <- subset(int.all, subset = patient_ID == "patient4")
+pat4_sn$subpopulation <- gsub("_", "-", pat4_sn$subpopulation) # celltalker has an issue with underscores
+```
+```{r}
+## Run celltalker
+interactions <- celltalk(input_object=pat4_sn,
+  metadata_grouping="subpopulation",
+  ligand_receptor_pairs=ramilowski_pairs,
+  number_cells_required=30,
+  min_expression=200,
+  max_expression=20000,
+  scramble_times=10)
+# saveRDS(interactions, paste0(rootObj, "pat4_celltalker_interactions.rds"))
+```
+
+### spatially informed filtering
+```{r}
+mtx <- read.csv(paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/final_subpopulations/correlation/patient4_55um_correlation_matrix.csv", row.names = 1, check.names = FALSE)
+mtx <- pmax(mtx, t(mtx)) # get bidirectional correlation
+spatial_long <- as.data.frame(as.table(as.matrix(mtx))) %>%
+  setNames(c("cell_type1", "cell_type2", "spatial_corr")) 
+
+# Filter interactions
+top_stats <- interactions %>%
+  mutate(p_val_adj = p.adjust(p_val, method = "fdr")) %>%
+  left_join(spatial_long, by = c("cell_type1", "cell_type2")) %>%
+  filter(!is.na(spatial_corr), spatial_corr > 0.15) %>%
+  filter(p_val_adj < 0.05, value > 0) %>%
+  group_by(cell_type1) %>%
+  ungroup()
+
+top_stats_f <- top_stats %>%
+  group_by(cell_type1) %>%
+  top_n(2, value) %>%
+  ungroup()
+pdf(paste0(wd, "pat4_celltalker_circos_cor0.15_2interactions.pdf"), width = 15, height = 13)
+circos_plot(ligand_receptor_frame=top_stats_f,
+  cell_group_colors=cols_0.15,
+  ligand_color="blue",
+  receptor_color="red", 
+  cex_outer=1.5,
+  cex_inner=0.5
+)
+dev.off()
+```
+
+```{r}
+cols_0.2 <- c("#8E44AD", "#2171B5", "#C6DBEF", "#B20000", "#FF9900", "#FF6347", 
+"#8B4513", "#FFE066", "#c4a310ff", "#27AE60", "#82E0AA", "#800000", "#A93226", 
+"#145A32", "#08519C", "#6BAED6")
+
+cols_0.15 <- c("#8E44AD", "#2171B5", "#C6DBEF", "#B20000", "#FF9900", "#FF6347", 
+"#8B4513", "#FFE066", "#c4a310ff", "#27AE60", "#82E0AA", "#4682B4", "#1E90FF", 
+"#800000", "#A93226", "#990F02", "#B22222", 
+"#145A32", "#08519C", "#B0B0B0", "#1CA9C9", "#6BAED6", "#003366")
+```
+
+### alternative plot 
+```{r}
+library(CCPlotR)
+cc <- top_stats %>%
+  select(source = cell_type1,
+         target = cell_type2,
+         interaction,
+         score = value) %>%
+  separate(interaction, into = c("ligand", "receptor"), sep = "_") %>%
+  select(source, target, ligand, receptor, score)
+````
+
+```{r}
+# Idents(pat4_sn) <- "subpopulation"
+# exp <- AverageExpression(pat4_sn, group.by = "subpopulation", assays = "RNA", slot = "data")$RNA
+# exp <- as.data.frame(exp) %>%
+#     tibble::rownames_to_column("gene") %>%
+#     pivot_longer(-gene, names_to = "cell_type", values_to = "mean_exp") %>%
+#     select(cell_type, gene, mean_exp)
+```
+
+```{r}
+cell_cols <- c(
+    # Immune
+    "T-cells-CD8-effector"       = "#4682B4",
+    "T-cells-CD4-Treg"           = "#1E90FF",
+    "T-cells-atypical"           = "#003366",
+    "B-cells-activated"          = "#6bd6d4ff",
+    "B/T-mixed-patient4"         = "#C6DBEF",
+    "Plasma-cells"               = "#1CA9C9",
+    "pDCs"                       = "#08519C",
+    "Macrophages-monocyte-derived" = "#003780ff",
+
+    # CAFs
+    "mCAF-remodeling"            = "#990F02",
+    "mCAF-plastic"               = "#B22222",
+    "mCAF-patient4-specific"     = "#A93226",
+    "mCAF-classical"             = "#800000",
+    "iCAF-classical"             = "#f6d46cff",
+    "iCAF-secretory"             = "#c4a310ff",
+    "apCAF-classical"            = "#8E44AD",
+
+    # Epithelium
+    "Myoepithelial"              = "#27AE60",
+    "LumProgenitors-transitional-pat4" = "#82E0AA",
+    "LumProgenitors-Cycl-pat4"   = "#145A32",
+    "Cancer-Transitional-pat4"   = "#FF6347",
+    "Cancer-Basal/Plastic-pat4"  = "#FF9900",
+    "Cancer-Basal/Cycl-pat4"     = "#B20000",
+
+    # Endothelial
+    "Endothelial"                = "#de88a9ff"
+)
+
+cc$source <- factor(cc$source, levels = names(cell_cols))
+cc$target <- factor(cc$target, levels = names(cell_cols))
+````
+
+#### heatmap interaction cell states
+```{r}
+pdf(paste0(wd, "pat4_heatmap.pdf"), width = 8, height = 8)
+cc_heatmap(cc) + theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust = 0))
+dev.off()
+```
+
+#### dotplot interaction ligand receptor 
+```{r}
+pdf(paste0(wd, "pat4_dotplot.pdf"), width = 8, height = 12)
+cc_dotplot(cc, option = "B", n_top_ints = 100)
+dev.off()
+```
+
+#### circos
+```{r}
+pdf(paste0(wd, "pat4_circos.pdf"), width = 15, height = 15)
+cc_circos(cc, cell_cols = cell_cols, option = "B", exp_df = exp, n_top_ints = 100)
+dev.off()
+```
+
+# Check interesting genes in Visium data
+```{r}
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/interesting_genes/")
+mergedVis <- readRDS(paste0(rootObj, "merged_visium_deconSubpopulations_simplex.rds"))
+```
+
+### C3 pathway interactions
+```{r}
+filename <- "C3_iCAF_interactions"
+genes <- c("C3", "ITGAX", "B2M", "ITGB1", "CXCR4", "LRP1")
+cellstates <- c("iCAF-classical", "mCAF-plastic", "pDCs", "B-cells-activated", "B/T-mixed-patient4")
+
+plot_pat4_genes_and_cellstates <- function(pat4, wd, filename, genes, cellstates) {
+    # Plot gene features
+    DefaultAssay(pat4) <- "Spatial"
+    p_genes <- MapFeatures(
+        pat4, features = genes, pt_size = 1, ncol = length(genes), drop_na = TRUE, label_by = "sample_id",
+        colors = viridis::turbo(11), override_plot_dims = TRUE
+    )
+    ggsave(
+        paste0(wd, filename, "_pat4_genes.jpg"),
+        plot = p_genes, height = 5, width = 5 * length(genes), dpi = 400, limitsize = FALSE
+    )
+    DefaultAssay(pat4) <- "subpopulation"
+    p_cellstates <- MapFeatures(
+        pat4, features = cellstates, pt_size = 1, ncol = length(cellstates), drop_na = TRUE, label_by = "sample_id",
+        colors = viridis::turbo(11), override_plot_dims = TRUE
+    )
+    ggsave(
+        paste0(wd, filename, "_pat4_cellstates.jpg"),
+        plot = p_cellstates, height = 5, width = 5 * length(cellstates), dpi = 400, limitsize = FALSE
+    )
+}
+```
+
+#### potential tolerigenic state in immune aggregates induced by C3 
+```{r}
+filename <- "C3_tolerigenic_state"
+cellstates <- c("iCAF-classical", "pDCs", "B-cells-activated", "B/T-mixed-patient4")
+genes <- c(
+  "IDO1",   # tryptophan metabolism → T cell suppression
+  "CD274",  # PD-L1 checkpoint ligand
+  "SOCS1",  # dampens cytokine signaling
+  "SOCS3",  # negative feedback on pro-inflammatory pathways
+  "CTLA4",  # inhibitory receptor on T cells
+  "TIGIT",  # inhibitory receptor on T cells
+  "CD38"    # regulatory B cell marker
+)
+plot_pat4_genes_and_cellstates(pat4, wd, filename, genes, cellstates)
+```
+
+##### pro-inflammatory state
+```{r}
+filename <- "proinflammatory_state"
+cellstates <- c("iCAF-classical", "pDCs", "B-cells-activated", "B/T-mixed-patient4")
+genes <- c(
+  "GZMB",    # Granzyme B, cytotoxic T/NK cell effector
+  "PRF1",    # Perforin, cytotoxic T/NK cells
+  "IFNG",    # interferon gamma, Th1 / cytotoxic cytokine
+  "TNF",     # pro-inflammatory cytokine
+  "CD8A",    # cytotoxic T cell marker
+  "NKG7",    # cytotoxic granule-associated protein
+  "CXCL9"    # recruits activated T cells
+)
+plot_pat4_genes_and_cellstates(pat4, wd, filename, genes, cellstates)
+```
+
+### mCAF remodeling 
+LAMB1 interaction with mCAF remodeling genes could indicate an initial change in mCAF remodeling state
+```{r}
+filename <- "mCAF_remodeling_DCIS/mCAF_remodelingDCIS"
+genes <- c("LAMB1", "COL5A2", "COL6A1", "VCAN", "THBS2", "ITGAV", "DDR1", "EGFR", "CD47", "CD44", "ITGB1")
+cellstates <- c("mCAF-remodeling", "Cancer-Transitional-pat4", "Cancer-Basal/Plastic-pat4")
+plot_pat4_genes_and_cellstates(pat4, wd, filename, genes, cellstates)
+```
+
+### iCAF secretory and LumProgenitors transitional interactions
+LTF-LRP1 interaction could be a driver for the cancer front 
+```{r}
+filename <- "iCAF_secretory_LumProgTransition/icaf_lumprog"
+genes <- c("LTF", "LRP11", "LRP1", "NID1", "DCN", "COL6A3", "PTPRF", "LEPR", "MET", "ITGA1")
+cellstates <- c("iCAF-secretory", "LumProgenitors-transitional-pat4")
+plot_pat4_genes_and_cellstates(pat4, wd, filename, genes, cellstates)
+```
+
+### mCAF populations in the invasive area
+Investigating genes responsible for sustaining the invasive growth, invasion and angiogenesis
+
+```{r}
+filename <- "mCAF_invasive/mCAF_invasive"
+genes <- c("COL5A2", "DDR1", "THBS2", "CD47", "VCAN", "CD44", "ITGB1", "A2M", "LRP1")
+cellstates <- c("mCAF-classical", "mCAF-plastic", "mCAF-patient4-specific", "Cancer-Basal/Cycl-pat4")
+plot_pat4_genes_and_cellstates(pat4, wd, filename, genes, cellstates)
+```
+
+### apCAF interaction with cell states in invasive area
+```{r}
+filename <- "apCAF/apCAF"
+genes <- c("COL5A2", "DDR1", "COL6A2", "ITGB1")
+cellstates <- c("apCAF-classical", "mCAF-patient4-specific", "mCAF-classical", "Cancer-Basal/Cycl-pat4")
+plot_pat4_genes_and_cellstates(pat4, wd, filename, genes, cellstates)
+```
+
+### after checking Xenium plot genes related to immune evasion 
+```{r}
+filename <- "T_complement"
+icaf_module        <- c("CXCL12","CXCL14","CXCL1","CXCL2","IL6","LIF","C3","TGFB1","PDPN","FAP","PDGFRA","COL1A1")
+chemotaxis_module  <- c("CXCR4","ACKR3","CXCR3","CXCR6","CCR5","CCR7","S1PR1","ITGAE","ITGB7","CD44")
+activation_module  <- c("CD69","FOS","JUN","EGR1","IRF4","CD28","ICOS","TNFRSF9","TNFRSF4")
+effector_module    <- c("GZMB","GZMA","PRF1","GNLY","NKG7","IFNG","TNF","IL2","TBX21")
+naive_module       <- c("CCR7","SELL","LEF1","TCF7","IL7R")
+exhaustion_module  <- c("PDCD1","TOX","NR4A1","CTLA4","LAG3","TIGIT","HAVCR2","ENTPD1")
+treg_module        <- c("FOXP3","IL2RA","IKZF2","TNFRSF18","TGFB1","SMAD3","STAT3")
+complement_module  <- c("C3AR1","C5AR1","BATF","SOCS1","NR4A1")
+genes <- complement_module
+
+DefaultAssay(mergedVis) <- "Spatial"
+p <- MapFeatures(
+    mergedVis, features = genes, pt_size = 0.6, ncol = length(genes), drop_na = TRUE, label_by = "sample_id",
+    colors = viridis::turbo(11), override_plot_dims = TRUE
+)
+ggsave(
+    paste0(wd, "iCAF_trapping_hypothesis/", filename, ".jpg"),
+    plot = p, height = 4*8, width = 4 * length(genes), dpi = 400, limitsize = FALSE
+)
+```
+
+# Looking for FDCs
+```{r}
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/fdc_frc_analysis/")
+int.all <- readRDS(paste0(SN_RDS, "/breast_cancer/cross_patient/integrated_all_subpopulations.rds"))
+mergedVis <- readRDS(paste0(SPATIAL_RDS, "/breast_cancer/cross_patient/merged_visium_deconSubpopulations_simplex.rds"))
+```
+
+### FDC
+```{r}
+wd <- paste0(FIGS_ROOT, "/breast_cancer/analysis_cellStateLevel/fdc/")
+pos_genes <- c("CXCL13", "FDCSP", "CR1", "CR2", "SRGN", "PAPPA", "MFGE8", "CLU", "SLC1A2")
+neg_genes <- c("PTPRC", "KRT18", "PECAM1", "ADIPOQ", "CD79A", "CD3E", "LYZ", "EPCAM", "MS4A1")
+genes <- c(pos_genes, neg_genes)
+DefaultAssay(int.all) <- "RNA"
+# lin <- subset(int.all, subset = lineage == "immune")
+lin <- int.all
+p <- DotPlot(lin, features = genes, group.by = "subpopulation") + 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+ggsave(paste0(wd, "all_dotplot.pdf"), p, dpi = 400, height = 5, , width = 12.5, limitsize = FALSE)
+```
+
+#### select clusters potentially containing FDCs
+```{r}
+clusters_to_investigate <- c(
+  "T-cells_cycling",
+  "Myeloid_atypical_patient6",
+  "B/T-mixed_patient4",
+  "Cancer_Basal_AntigPres_pat5",
+  "Cancer_Basal_EMT_pat5",
+  "Cancer_Basal_stem-like_pat6",
+  "Cancer_Basal_stress_pat6",
+  "Cancer_Lum_pat7",
+  "Cancer_LumA_pat8"
+)
+sub <- subset(int.all, subset = subpopulation %in% clusters_to_investigate)
+set.seed(1)
+sub <- sub %>%
+  NormalizeData() %>%
+  FindVariableFeatures() %>%
+  ScaleData() %>%
+  RunPCA() %>%
+  RunUMAP(dims = 1:30)
+sub <- FindNeighbors(sub, dims = 1:30)
+for (res in c(0.1, 0.25, .3, .4, .5, 0.8, 1, 1.25)){
+  sub <- FindClusters(sub, resolution = res, algorithm = 1, verbose = FALSE)
+}
+d1 <- DimPlot(sub, reduction = "umap", group.by = "RNA_snn_res.0.1", label = TRUE) + 
+    DimPlot(sub, reduction = "umap", group.by = "RNA_snn_res.0.25", label = TRUE) + 
+    DimPlot(sub, reduction = "umap", group.by = "RNA_snn_res.0.3", label = TRUE) + 
+    DimPlot(sub, reduction = "umap", group.by = "RNA_snn_res.0.4", label = TRUE)
+d2 <- DimPlot(sub, reduction = "umap", group.by = "RNA_snn_res.0.5", label = TRUE) +
+    DimPlot(sub, reduction = "umap", group.by = "RNA_snn_res.0.8", label = TRUE) + 
+    DimPlot(sub, reduction = "umap", group.by = "RNA_snn_res.1", label = TRUE) + 
+    DimPlot(sub, reduction = "umap", group.by = "RNA_snn_res.1.25", label = TRUE)
+pdf(paste0(wd, "FDC_candidates_umapRes.pdf"), width = 20, height = 20)
+d1 / d2
+dev.off()
+```
+
+```{r}
+sub$seurat_clusters <- sub$RNA_snn_res.0.1
+DefaultAssay(sub) <- "RNA"
+p <- DotPlot(sub, features = genes, group.by = "seurat_clusters") + 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+ggsave(paste0(wd, "FDC_candidates_dotplot.pdf"), p, dpi = 400, height = 5, limitsize = FALSE)
+p <- FeaturePlot(sub, features = genes)
+ggsave(paste0(wd, "FDC_candidates_featureplot.pdf"), p, dpi = 400, height = 20, width = 20, limitsize = FALSE)
+p <- DimPlot(sub, group.by = c("seuratAnnotation_major", "subpopulation"))
+ggsave(paste0(wd, "FDC_candidates_identity.pdf"), p, dpi = 400, height = 5, width = 13, limitsize = FALSE)
+```
+
+#### separate signal from other cells and FDCs
+```{r}
+fdc <- subset(sub, subset = (FDCSP > 1 | CXCL13 > 1) & MS4A1 < 1 & LYZ < 1 & ITGAX < 1 & EPCAM < 1)
+set.seed(1)
+fdc <- fdc %>%
+  NormalizeData() %>%
+  FindVariableFeatures() %>%
+  ScaleData() %>%
+  RunPCA() %>%
+  RunUMAP(dims = 1:30)
+fdc <- FindNeighbors(fdc, dims = 1:30)
+for (res in c(0.1, 0.25, .3, .4, .5, 0.8, 1, 1.25)){
+  fdc <- FindClusters(fdc, resolution = res, algorithm = 1, verbose = FALSE)
+}
+d1 <- DimPlot(fdc, reduction = "umap", group.by = "RNA_snn_res.0.1", label = TRUE) + 
+    DimPlot(fdc, reduction = "umap", group.by = "RNA_snn_res.0.25", label = TRUE) + 
+    DimPlot(fdc, reduction = "umap", group.by = "RNA_snn_res.0.3", label = TRUE) + 
+    DimPlot(fdc, reduction = "umap", group.by = "RNA_snn_res.0.4", label = TRUE)
+d2 <- DimPlot(fdc, reduction = "umap", group.by = "RNA_snn_res.0.5", label = TRUE) +
+    DimPlot(fdc, reduction = "umap", group.by = "RNA_snn_res.0.8", label = TRUE) + 
+    DimPlot(fdc, reduction = "umap", group.by = "RNA_snn_res.1", label = TRUE) + 
+    DimPlot(fdc, reduction = "umap", group.by = "RNA_snn_res.1.25", label = TRUE)
+pdf(paste0(wd, "FDC_cleaned_umap.pdf"), width = 10, height = 10)
+d1 / d2
+dev.off()
+fdc$seurat_clusters <- fdc$RNA_snn_res.0.1
+p <- DotPlot(fdc, features = genes, group.by = "seurat_clusters") + 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+ggsave(paste0(wd, "FDC_clean_dotplot.pdf"), p, dpi = 400, height = 5, limitsize = FALSE)
+p <- FeaturePlot(fdc, features = genes)
+ggsave(paste0(wd, "FDC_clean_featureplot.pdf"), p, dpi = 400, height = 20, width = 20, limitsize = FALSE)
+# marker genes 
+Idents(fdc) <- "seurat_clusters"
+markers <- FindAllMarkers(fdc, assay = "RNA")
+top_markers <- markers %>%
+    group_by(cluster) %>%
+    top_n(n = 5, wt = avg_log2FC)
+p <- DotPlot(fdc, features = unique(top_markers$gene)) + # the subset is to fix a bug related to NAs
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+ggsave(
+    filename = paste0(wd, "FDC_clean_markers_dotplot.pdf"),
+    plot = p,   
+    width = 7,
+    height = 5
+)
+```
+
+#### further purify: cluster 0 and 1
+```{r}
+fdc_final <- subset(fdc, subset = seurat_clusters %in% c(0,1))
+set.seed(1)
+fdc_final <- fdc_final %>%
+  NormalizeData() %>%
+  FindVariableFeatures() %>%
+  ScaleData() %>%
+  RunPCA() %>%
+  RunUMAP(dims = 1:30)
+fdc_final <- FindNeighbors(fdc_final, dims = 1:30)
+for (res in c(0.1, 0.25, .3, .4, .5, 0.8, 1, 1.25)){
+  fdc_final <- FindClusters(fdc_final, resolution = res, algorithm = 1, verbose = FALSE)
+}
+d1 <- DimPlot(fdc_final, reduction = "umap", group.by = "RNA_snn_res.0.1", label = TRUE) + 
+    DimPlot(fdc_final, reduction = "umap", group.by = "RNA_snn_res.0.25", label = TRUE) + 
+    DimPlot(fdc_final, reduction = "umap", group.by = "RNA_snn_res.0.3", label = TRUE) + 
+    DimPlot(fdc_final, reduction = "umap", group.by = "RNA_snn_res.0.4", label = TRUE)
+d2 <- DimPlot(fdc_final, reduction = "umap", group.by = "RNA_snn_res.0.5", label = TRUE) +
+    DimPlot(fdc_final, reduction = "umap", group.by = "RNA_snn_res.0.8", label = TRUE) + 
+    DimPlot(fdc_final, reduction = "umap", group.by = "RNA_snn_res.1", label = TRUE) + 
+    DimPlot(fdc_final, reduction = "umap", group.by = "RNA_snn_res.1.25", label = TRUE)
+pdf(paste0(wd, "FDC_pure_umap.pdf"), width = 7, height = 10)
+d1 / d2
+dev.off()
+fdc_final$seurat_clusters <- fdc_final$RNA_snn_res.0.25
+p <- DotPlot(fdc_final, features = genes, group.by = "seurat_clusters") + 
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+ggsave(paste0(wd, "FDC_pure_dotplot.pdf"), p, dpi = 400, height = 5, limitsize = FALSE)
+p <- FeaturePlot(fdc_final, features = genes)
+ggsave(paste0(wd, "FDC_pure_featureplot.pdf"), p, dpi = 400, height = 20, width = 20, limitsize = FALSE)
+# marker genes 
+Idents(fdc_final) <- "seurat_clusters"
+markers <- FindAllMarkers(fdc_final, assay = "RNA")
+top_markers <- markers %>%
+    group_by(cluster) %>%
+    top_n(n = 5, wt = avg_log2FC)
+p <- DotPlot(fdc_final, features = unique(top_markers$gene)) + # the subset is to fix a bug related to NAs
+        coord_flip() +
+        scale_color_gradientn(colors = c("blue", "white", "darkred")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+ggsave(
+    filename = paste0(wd, "FDC_pure_markers_dotplot.pdf"),
+    plot = p,   
+    width = 7,
+    height = 5
+)
+```
+
+
+################################################################# UTILS ################################################################
+# h5ad conversions
+
+```{r}
+library(sceasy)
+library(reticulate)
+loompy <- reticulate::import('loompy')
+```
+
+#### simplex SN obj
+```{r}
+# seurat to anndata
+sceasy::convertFormat(int.all, from="seurat", to="anndata", assay = "RNA",
+                       outFile=paste0(rootObj, 'integrated_all_subpopulations.h5ad'))
+```
+
+#### spatial obj
+```{r}
+# seurat to anndata
+sceasy::convertFormat(mergedVis, from="seurat", to="anndata", assay = "subpopulation",
+                       outFile=paste0(rootObj, 'merged_visium_deconSubpopulations.h5ad'))
+
+```
+
+
+### fix image pathways
+```{r}
+mergedVis@tools$Staffli@imgs <- c(
+  "patient1_55um" = paste0(SPACERANGER, "/breast_cancer/55um/patient1_55um/spatial/tissue_lowres_image.png"),
+  "patient2_55um" = paste0(SPACERANGER, "/breast_cancer/55um/patient2_55um/spatial/tissue_lowres_image.png"),
+  "patient4_55um" = paste0(SPACERANGER, "/breast_cancer/55um/patient4_55um/spatial/tissue_hires_image.png"),
+  "patient5_55um" = paste0(SPACERANGER, "/breast_cancer/55um/patient5_55um/spatial/tissue_hires_image.png"),
+  "patient6_55um" = paste0(SPACERANGER, "/breast_cancer/55um/patient6_55um/spatial/tissue_hires_image.png"),
+  "patient7_55um" = paste0(SPACERANGER, "/breast_cancer/55um/patient7_55um/spatial/tissue_hires_image.png"),
+  "patient8_55um" = paste0(SPACERANGER, "/breast_cancer/55um/patient8_55um/spatial/tissue_hires_image.png"),
+  "patient9_55um" = paste0(SPACERANGER, "/breast_cancer/55um/patient9_55um/spatial/tissue_hires_image.png")
+)
+mergedVis <- LoadImages(mergedVis)
+```
+
+### convert staffli to seuratObj@images
+```{r}
+mergedVis <- UpdateSeuratFromSemla(mergedVis)
+```
+
+
+
