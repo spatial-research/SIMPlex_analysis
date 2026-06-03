@@ -1,29 +1,31 @@
 # `data/` — Heavy data root
 
-Runtime data for the SIMPlex pipeline. Directory structure and README files are git-tracked; actual data files are gitignored.
+SIMPlex article data. Directory structure and README files are git-tracked; actual data files are gitignored.
 
 ## Get the data
 
-**DOI:** [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40)
+**DOI:** `[10.71775/kth.jg1wh-kza40](https://datarepository.kth.se/records/jg1wh-kza40)`
 
 1. Download the KTH archive (~37 GB processed data).
 2. Unpack so the three top-level folders merge into this directory:
-   - `data/spatial/`
-   - `data/single_nuclei/`
-   - `data/other/`
+  - `data/spatial/`
+  - `data/single_nuclei/`
+  - `data/other/`
 
 After unpacking, paths should match what the scripts expect via `config.R`.
 
 ## Layout
 
 | Branch | Contents |```{r}
-```
-|--------|----------|
-| [`spatial/`](spatial/) | SpaceRanger outputs, Xenium, Visium/HD Seurat objects |
-| [`single_nuclei/`](single_nuclei/) | CellRanger, CellBender, snRNA RDS, raw FASTQs |
-| [`other/`](other/) | External reference atlases, CTA CSVs, histopathology spot annotations |
 
 ```
+|--------|----------|
+| `[spatial/](spatial/)` | SpaceRanger outputs, Xenium, Visium/HD Seurat objects |
+| `[single_nuclei/](single_nuclei/)` | CellRanger, CellBender, snRNA RDS, raw FASTQs |
+| `[other/](other/)` | External reference atlases, CTA CSVs, histopathology spot annotations |
+
+```
+
 data/
 ├── spatial/
 │   ├── spaceranger/          # Visium 55 µm, HD, mouse brain
@@ -38,9 +40,10 @@ data/
     ├── external_references/  # Wu BC atlas, Linnarsson, Allen, Cords CAF, …
     ├── CTA/                  # computational tissue annotation per sample
     └── histpathology_visium/ # pathologist spot annotations
+
 ```
 
-Generated figures go to [`figs/`](../figs/) at the repo root (not inside `data/`).
+Generated figures go to `[figs/](../figs/)` at the repo root (not inside `data/`).
 
 ## Population status
 
@@ -70,4 +73,6 @@ Per-folder expected layouts and status:
 - `single_nuclei/{cellranger,cellbender}/*/README.md`
 - `other/external_references/README.md`
 
-External download URLs: [`docs/data_availability.md`](../docs/data_availability.md).
+External download URLs: `[docs/data_availability.md](../docs/data_availability.md)`.
+```
+
