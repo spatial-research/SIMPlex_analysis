@@ -8,24 +8,25 @@ Mirrors the manuscript "Code and Data availability" section. Use alongside [`dat
 
 Contains: R objects (.rds), H&E images, CTA and histopathology CSVs, Xenium outputs (patients 4, 5), SpaceRanger outputs, prostate and mouse brain data.
 
-After download, unpack into the repo so these folders are populated:
+After download, unpack into the repo so these **four** `data/` folders are populated:
 
-- `data/spatial/` — SpaceRanger, Xenium, Visium Seurat objects
+- `data/raw_data/` — FASTQs and microscopy (archival; not read by scripts)
 - `data/single_nuclei/` — CellRanger, CellBender, snRNA RDS
+- `data/spatial/` — SpaceRanger, Xenium, Visium Seurat objects
 - `data/other/` — external references, CTA, histopathology
 
-Some subdirectories may still be incomplete in the git checkout while the KTH upload is finalized. See [`data/README.md`](../data/README.md) for the current status table.
+Processed layers are present and barcode-verified in the local bundle. Outstanding items: breast Visium HD raw FASTQs, patient10 source TIFFs. See [`data/README.md`](../data/README.md).
 
 ## Raw sequencing data
 
 | Cohort | Modality | Status |
 |--------|----------|--------|
-| Breast cancer (patients 1–10) | Visium 55 µm FASTQs | Not yet deposited |
-| Breast cancer (patients 4, 5) | Visium HD FASTQs | Not yet deposited |
-| Breast cancer (patients 4, 5) | Chromium snRNA-seq FASTQs | Not yet deposited |
+| Breast cancer (patients 1–10) | Visium 55 µm FASTQs | In KTH bundle under `data/raw_data/spatial/…/55um/`; public repo upon publication |
+| Breast cancer (patients 4, 5) | Visium HD FASTQs | **Pending** in bundle (`data/raw_data/spatial/breast_cancer/HD/` empty) |
+| Breast cancer (patients 1–10) | Chromium snRNA-seq FASTQs | In KTH bundle under `data/raw_data/single_nuclei/breast_cancer/` (pool-level); public repo upon publication |
 | Breast cancer (patients 4, 5) | Xenium raw outputs | Processed Xenium Analyzer output in KTH deposit |
-| Prostate cancer (pt10, pt20) | Visium HD + snRNA-seq FASTQs | Not yet deposited |
-| Mouse brain (A, B) | Visium + snRNA-seq FASTQs | Not yet deposited |
+| Prostate cancer (pt10, pt20) | Visium HD + snRNA-seq FASTQs | In KTH bundle under `data/raw_data/`; public repo upon publication |
+| Mouse brain (A, B) | Visium + snRNA-seq FASTQs | In KTH bundle under `data/raw_data/`; public repo upon publication |
 
 Raw sequence data will be uploaded to a public repository upon publication.
 

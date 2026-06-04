@@ -32,8 +32,9 @@ SIMPlex_analysis/
 │   ├── sample_metadata.csv
 │   └── human_lr_pair.txt
 ├── data/                          # heavy data — structure tracked, files gitignored
+│   ├── raw_data/                  # FASTQs + microscopy (archival; scripts do not read this)
+│   ├── single_nuclei/             # CellRanger, CellBender, snRNA RDS
 │   ├── spatial/                   # SpaceRanger, Xenium, Visium/HD Seurat objects
-│   ├── single_nuclei/             # CellRanger, CellBender, snRNA RDS, raw FASTQs
 │   └── other/                     # external references, CTA, histopathology
 ├── figs/                          # script outputs — structure tracked, files gitignored
 └── docs/
@@ -74,7 +75,7 @@ See [`docs/script_to_figure_map.md`](docs/script_to_figure_map.md) for a per-pan
 | patient7_55um | patient7 | Visium 55 µm | LuminalB(ER) | |
 | patient8_55um | patient8 | Visium 55 µm | LuminalA | |
 | patient9_55um | patient9 | Visium 55 µm | LuminalB(ER) | |
-| patient10_55um | patient10 | Visium 55 µm | unknown | fresh-frozen 18 µm; not in integrative analysis |
+| patient10_55um | patient10 | Visium 55 µm + snRNA | unknown | fresh-frozen specimen (std Visium); not in the FFPE integrative analysis |
 | pt10_HD | pt10 | Visium HD + snRNA | Prostate cancer | |
 | pt20_HD | pt20 | Visium HD + snRNA | Prostate cancer | |
 | A | A | Visium + snRNA | Mouse brain | |
@@ -130,9 +131,9 @@ HDF5_LIB  <- "/path/to/libhdf5_hl.so.200"   # or NULL to skip
 
 ### 4. Populate `data/` and `figs/`
 
-After cloning, download from the [KTH Data Repository](https://datarepository.kth.se/records/jg1wh-kza40) and unpack so `data/spatial/`, `data/single_nuclei/`, `data/other/`, and `figs/` merge into the repo root. Details: [`data/README.md`](data/README.md), [`figs/README.md`](figs/README.md).
+After cloning, download from the [KTH Data Repository](https://datarepository.kth.se/records/jg1wh-kza40) and unpack so `data/raw_data/`, `data/single_nuclei/`, `data/spatial/`, `data/other/`, and `figs/` merge into the repo root. Details: [`data/README.md`](data/README.md), [`figs/README.md`](figs/README.md).
 
-**Data completeness:** Some subdirectories are still being populated for the KTH upload (per-sample snRNA RDS, 55 µm Visium objects, full SpaceRanger cohort, integrated prostate objects). The README files note what is present vs. pending. Re-download from KTH once the deposit is finalized for the complete set.
+**Data completeness:** All processing layers (CellRanger, CellBender, SpaceRanger, snRNA/Visium/HD/Xenium objects) are present and barcode-verified against the manuscript R objects. Two items are still pending from the sequencing core / collaborator: the Visium HD **raw** FASTQs (breast spatial) and the patient10 fresh-frozen H&E / CytAssist source TIFFs. See [`data/README.md`](data/README.md) for the per-item status table.
 
 ### 5. Run the pipeline
 

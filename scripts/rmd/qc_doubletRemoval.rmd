@@ -37,14 +37,14 @@ options(future.globals.maxSize = 3.5 * 1024^3)  # 3.5 GiB
 
 # Iterate through the samples, filter the data based on cellbender and return seurat objects 
 ```{r}
-samples <- c("3962_1", "3962_2")
+samples <- c("patient4_1", "patient4_2")
 
 for (sample in samples){
   patient <- sub("_.*", "", sample)
 
-  # pathing
-  path_cellbender <- paste0(paste0(CELLBENDER, "/breast_cancer/", patient, "/", sample, "_cellbender_filtered.h5")
-  path_cellranger <- paste0(paste0(CELLBENDER, "/breast_cancer/", patient, "/", sample, "_filtered_feature_bc_matrix.h5")
+  # pathing (HD patient4 = two libraries under patient4/patient4_1, patient4/patient4_2)
+  path_cellbender <- paste0(CELLBENDER, "/breast_cancer/HD/", patient, "/", sample, "/", sample, "_cellbender_filtered.h5")
+  path_cellranger <- paste0(CELLRANGER, "/breast_cancer/HD/", patient, "/count/sample_filtered_feature_bc_matrix.h5")
 
   # load cellbender data and create seurat object
   cellbender <- Read_CellBender_h5_Mat(file_name = path_cellbender, use.names = TRUE)

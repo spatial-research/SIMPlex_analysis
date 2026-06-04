@@ -1,9 +1,10 @@
+remove_before_submission/
+
 # ---- data/ ------------------------------------------------------------------
 # The data/ directory structure and .md files are git-tracked.
 # Actual data files (R objects, matrices, images, pipeline outputs) are ignored.
 data/*
 !data/**/*.md
-!data/**/*.html
 
 # ---- figs/ ------------------------------------------------------------------
 # Directory structure and README.md files are git-tracked.
@@ -26,6 +27,9 @@ figs/**/*.csv
 .RData
 .Ruserdata
 *.Rproj
+# renv: the project uses the conda env in environment/; ignore any local renv setup
+renv/
+.Rprofile
 
 # ---- OS / editor artifacts --------------------------------------------------
 .DS_Store
