@@ -32,8 +32,8 @@ SIMPlex_analysis/
 │   ├── sample_metadata.csv
 │   └── human_lr_pair.txt
 ├── data/                          # heavy data — structure tracked, files gitignored
-│   ├── raw_data/                  # FASTQs + microscopy (archival; scripts do not read this)
-│   ├── single_nuclei/             # CellRanger, CellBender, snRNA RDS
+│   ├── raw_data/                  # FASTQs + microscopy (separate sequence deposit; optional locally)
+│   ├── single_nuclei/             # CellRanger, CellBender, snRNA RDS  ← main deposit
 │   ├── spatial/                   # SpaceRanger, Xenium, Visium/HD Seurat objects
 │   └── other/                     # external references, CTA, histopathology
 ├── figs/                          # script outputs — structure tracked, files gitignored
@@ -131,9 +131,9 @@ HDF5_LIB  <- "/path/to/libhdf5_hl.so.200"   # or NULL to skip
 
 ### 4. Populate `data/` and `figs/`
 
-After cloning, download from the [KTH Data Repository](https://datarepository.kth.se/records/jg1wh-kza40) and unpack so `data/raw_data/`, `data/single_nuclei/`, `data/spatial/`, `data/other/`, and `figs/` merge into the repo root. Details: [`data/README.md`](data/README.md), [`figs/README.md`](figs/README.md).
+After cloning, download the **processed** archive from the [KTH Data Repository](https://datarepository.kth.se/records/jg1wh-kza40) and unpack `data/single_nuclei/`, `data/spatial/`, `data/other/`, and `figs/` into the repo root. That is enough to run the analysis scripts. Raw FASTQs are deposited **separately** (see [`docs/data_availability.md`](docs/data_availability.md)); a local `data/raw_data/` tree may exist for curation but is not part of the main bundle. Details: [`data/README.md`](data/README.md), [`figs/README.md`](figs/README.md).
 
-**Data completeness:** All processing layers (CellRanger, CellBender, SpaceRanger, snRNA/Visium/HD/Xenium objects) are present and barcode-verified against the manuscript R objects. Two items are still pending from the sequencing core / collaborator: the Visium HD **raw** FASTQs (breast spatial) and the patient10 fresh-frozen H&E / CytAssist source TIFFs. See [`data/README.md`](data/README.md) for the per-item status table.
+**Submission readiness:** Processed layers are present and barcode-verified. Raw sequence data is a separate deposit; HD section snRNA FASTQs are `visHD_BC_rep1_*` / `visHD_BC_rep2_*` alongside the other pools in `data/raw_data/single_nuclei/breast_cancer/`. Still pending: HD **spatial** FASTQs and patient10 source TIFFs. See [`data/README.md`](data/README.md).
 
 ### 5. Run the pipeline
 
@@ -156,8 +156,8 @@ Every script starts with `source(here::here("config.R"))`.
 
 ## Data and code availability
 
-- **Processed data** — KTH DOI: [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40)
-- **Raw sequencing data** — to be deposited upon publication
+- **Processed data** (matrices, SpaceRanger/Xenium outputs, R objects, annotations) — KTH DOI: [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40)
+- **Raw sequencing data** — separate public repository upon publication (linked from the KTH record; layout mirrors `data/raw_data/`)
 - **Public references** — see [`docs/data_availability.md`](docs/data_availability.md)
 
 For questions about reproducing specific figures, see `docs/script_to_figure_map.md`, [`docs/manuscript_figure_map.md`](docs/manuscript_figure_map.md), and chunk subtitles in each Rmd.

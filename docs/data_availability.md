@@ -6,29 +6,31 @@ Mirrors the manuscript "Code and Data availability" section. Use alongside [`dat
 
 **KTH Data Repository** — DOI: [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40)
 
-Contains: R objects (.rds), H&E images, CTA and histopathology CSVs, Xenium outputs (patients 4, 5), SpaceRanger outputs, prostate and mouse brain data.
+Contains: R objects (`.rds`), CTA and histopathology CSVs, Xenium outputs (patients 4, 5), SpaceRanger outputs, CellRanger / CellBender matrices, prostate and mouse brain processed data, and external reference files under `data/other/`.
 
-After download, unpack into the repo so these **four** `data/` folders are populated:
+After download, unpack into the repo:
 
-- `data/raw_data/` — FASTQs and microscopy (archival; not read by scripts)
 - `data/single_nuclei/` — CellRanger, CellBender, snRNA RDS
 - `data/spatial/` — SpaceRanger, Xenium, Visium Seurat objects
 - `data/other/` — external references, CTA, histopathology
 
-Processed layers are present and barcode-verified in the local bundle. Outstanding items: breast Visium HD raw FASTQs, patient10 source TIFFs. See [`data/README.md`](../data/README.md).
+Processed layers are present and barcode-verified. The analysis scripts do **not** require raw FASTQs.
 
-## Raw sequencing data
+## Raw sequencing data (separate deposit)
 
-| Cohort | Modality | Status |
+Raw FASTQs and source microscopy are **not** bundled in the main KTH processed archive. They will be placed in a **separate** public repository upon publication, using the same directory layout as `data/raw_data/` in this project (documented in [`data/README.md`](../data/README.md)). The KTH record will link to that repository.
+
+| Cohort | Modality | Notes |
 |--------|----------|--------|
-| Breast cancer (patients 1–10) | Visium 55 µm FASTQs | In KTH bundle under `data/raw_data/spatial/…/55um/`; public repo upon publication |
-| Breast cancer (patients 4, 5) | Visium HD FASTQs | **Pending** in bundle (`data/raw_data/spatial/breast_cancer/HD/` empty) |
-| Breast cancer (patients 1–10) | Chromium snRNA-seq FASTQs | In KTH bundle under `data/raw_data/single_nuclei/breast_cancer/` (pool-level); public repo upon publication |
-| Breast cancer (patients 4, 5) | Xenium raw outputs | Processed Xenium Analyzer output in KTH deposit |
-| Prostate cancer (pt10, pt20) | Visium HD + snRNA-seq FASTQs | In KTH bundle under `data/raw_data/`; public repo upon publication |
-| Mouse brain (A, B) | Visium + snRNA-seq FASTQs | In KTH bundle under `data/raw_data/`; public repo upon publication |
+| Breast cancer (patients 1–10) | Visium 55 µm FASTQs | `raw_data/spatial/breast_cancer/55um/` |
+| Breast cancer (patients 4, 5) | Visium HD FASTQs | **Pending** (`raw_data/spatial/breast_cancer/HD/` still empty locally) |
+| Breast cancer (patients 1–10) | Chromium snRNA-seq FASTQs (55 µm) | Pool-level files under `raw_data/single_nuclei/breast_cancer/*.fastq.gz` |
+| Breast cancer (patients 4, 5 HD section snRNA) | Chromium snRNA-seq FASTQs | `visHD_BC_rep1_*` and `visHD_BC_rep2_*` in `raw_data/single_nuclei/breast_cancer/` (multiplex library; flat, same layout as other pools) |
+| Breast cancer (patients 4, 5) | Xenium | Processed Analyzer output in main KTH deposit (`data/spatial/xenium/`) |
+| Prostate cancer (pt10, pt20) | Visium HD + snRNA-seq FASTQs | `raw_data/spatial/` and `raw_data/single_nuclei/prostate_cancer/` |
+| Mouse brain (A, B) | Visium + snRNA-seq FASTQs | `raw_data/spatial/mouse_brain/`, `raw_data/single_nuclei/mouse_brain/` |
 
-Raw sequence data will be uploaded to a public repository upon publication.
+No changes to local `data/raw_data/` are required before submission; sequence files stay in place for curation until the separate upload.
 
 ## Public reference datasets used
 

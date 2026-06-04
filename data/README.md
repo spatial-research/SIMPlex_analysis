@@ -2,14 +2,15 @@
 
 Four **top-level** areas. **`raw_data/` is separate** from the processed trees (`single_nuclei/`, `spatial/`): scripts never read raw files (no `RAW_ROOT` in `config.R`). Analysis uses CellRanger, CellBender, SpaceRanger outputs and deposited `.rds` objects only.
 
-| Folder | Role |
-|--------|------|
-| `raw_data/` | Archival FASTQs and microscopy (deposit / reproducibility) |
-| `single_nuclei/` | Processed snRNA: CellRanger → CellBender → Seurat objects |
-| `spatial/` | Processed spatial: SpaceRanger, Xenium, Visium Seurat objects |
-| `other/` | CTA, histopathology, public reference atlases |
+| Folder | Role | Submission |
+|--------|------|------------|
+| `raw_data/` | FASTQs and microscopy (local curation layout) | **Separate** sequence-data deposit (not bundled with processed data) |
+| `single_nuclei/` | Processed snRNA: CellRanger → CellBender → Seurat objects | Main processed deposit |
+| `spatial/` | Processed spatial: SpaceRanger, Xenium, Visium Seurat objects | Main processed deposit |
+| `other/` | CTA, histopathology, public reference atlases | Main processed deposit |
 
-- **Get the data:** KTH Data Repository, DOI [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40). Unpack so all four folders merge into `data/`.
+- **Processed data (figures / re-run from matrices):** KTH Data Repository, DOI [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40). Unpack `single_nuclei/`, `spatial/`, and `other/` into `data/`.
+- **Raw sequencing data:** deposited **separately** upon publication (same folder layout as `raw_data/` below; link from the KTH record). A local `raw_data/` copy may exist during curation but is not required to run the analysis scripts.
 - **Tracking:** directory structure and `.md` files are git-tracked; data files are gitignored. The KTH deposit is the canonical complete copy.
 - **IDs:** breast cancer `patient1`–`patient10`; prostate `pt10` / `pt20`; mouse brain `A` / `B`. No source institution IDs or dates in paths or filenames.
 - **`55um` = standard Visium** (55 µm spot pitch), not section thickness. Contrast with `HD` (Visium HD, 2 µm bins). Fresh-frozen breast (patient10) is standard Visium → under `55um/`.
@@ -49,8 +50,9 @@ data/
 │
 ├── raw_data/                              # NOT read by analysis scripts
 │   ├── single_nuclei/
-│   │   ├── breast_cancer/                 # pool-level *.fastq.gz (not per-patient folders)
-│   │   │   # snrna_pool1–3, SIMPlex_FFPE, SIMPlex_BC1, single-nuclei_BC, …
+│   │   ├── breast_cancer/                 # all snRNA FASTQs flat (pool-level *.fastq.gz)
+│   │   │   # 55 µm: snrna_pool1–3, SIMPlex_FFPE, SIMPlex_BC1, …
+│   │   │   # HD section nuclei: visHD_BC_rep1, visHD_BC_rep2 (multiplex → patient4 + patient5)
 │   │   ├── mouse_brain/                   # MOB_Chromium, sn_sample_1/2
 │   │   ├── prostate_cancer/               # prostate_AP5_P2 (multiplex → pt10 + pt20)
 │   │   └── technical_experiments/         # SIMPlex_Rev001
@@ -125,18 +127,24 @@ Paths come from [`../config.R`](../config.R): `CELLRANGER`, `CELLBENDER`, `SN_RD
 
 ---
 
-## snRNA raw pools → patients
+## snRNA raw → processed layers
 
-Multiplexed FLEX pools; patients are separated at CellRanger demultiplexing:
+### Standard Visium (55 µm) — pool-level FASTQs at `raw_data/…/breast_cancer/*.fastq.gz`
 
-| Raw FASTQ prefix (`raw_data/single_nuclei/breast_cancer/`) | Patients in `cellranger/…/55um/` |
-|-----------------------------------------------------------|----------------------------------|
+Multiplexed FLEX pools; patients are separated at CellRanger demultiplexing into `cellranger/…/55um/`:
+
+| Raw FASTQ prefix | Patients |
+|------------------|----------|
 | `snrna_pool1`–`snrna_pool3` | patient3–patient9 |
 | `SIMPlex_FFPE` | patient1, patient2 |
 | `SIMPlex_BC1` | patient10 (`patient10_1`, `patient10_2`) |
 | `single-nuclei_BC` | earlier pilot (not in manuscript objects) |
+| `visHD_BC_rep1` | **patient4_HD + patient5_HD** (multiplex Visium-HD section nuclei; demux at CellRanger) |
+| `visHD_BC_rep2` | same library, sequencing replicate 2 |
 
-Prostate: `prostate_AP5_P2` → `pt10`, `pt20`. Barcode-level provenance: `remove_before_submission/provenance_trace.md` (local, gitignored).
+Processed HD snRNA: `cellranger|cellbender/…/HD/patient4/` (`patient4_1` ← rep1, `patient4_2` ← rep2) and `…/HD/patient5/` (manuscript object from `SIMPlex_4497`; alternate rep1/rep2 demux for patient5 is archived).
+
+Prostate: `prostate_AP5_P2` → `pt10`, `pt20`. Barcode provenance: `remove_before_submission/provenance_trace.md` (local, gitignored).
 
 ---
 
@@ -155,10 +163,10 @@ Prostate: `prostate_AP5_P2` → `pt10`, `pt20`. Barcode-level provenance: `remov
 
 | Item | Status |
 |------|--------|
-| Processed snRNA + spatial (CellRanger, CellBender, SpaceRanger, objects, Xenium) | Present; barcode-verified vs manuscript `.rds` |
-| Raw snRNA FASTQs (`raw_data/single_nuclei/`) | Present (pool-level files) |
-| Raw spatial 55 µm (`raw_data/spatial/…/55um/`) | Present (patient1–10) |
-| Raw spatial HD breast (`raw_data/spatial/breast_cancer/HD/`) | **Pending** (empty; retrieve from sequencing core) |
-| patient10 H&E / CytAssist source TIFFs | Pending (collaborator copy) |
+| Processed snRNA + spatial (CellRanger, CellBender, SpaceRanger, objects, Xenium) | Ready for submission; barcode-verified vs manuscript `.rds` |
+| Main KTH deposit (`single_nuclei/`, `spatial/`, `other/`, `figs/`) | Processed layers + objects (scripts do not need raw FASTQs) |
+| Raw sequencing (`raw_data/`) | **Separate deposit** upon publication |
+| Raw snRNA HD breast (`visHD_BC_rep*`) | **Present** (flat in `breast_cancer/`; multiplex patient4 + patient5) |
+| Raw spatial HD breast (`raw_data/spatial/breast_cancer/HD/`) | **Pending** (Visium HD spatial FASTQs; not the same as HD snRNA above) |
+| patient10 H&E / CytAssist source TIFFs | Pending (collaborator copy; sequence or image deposit as applicable) |
 | Per-sample `spatial/r_objects/breast_cancer/55um/<sample>/` | Generated when running analysis scripts |
-| Public deposition of raw FASTQs | Upon publication (local copy in `raw_data/` for KTH bundle) |
