@@ -9,7 +9,7 @@ Four **top-level** areas. **`raw_data/` is separate** from the processed trees (
 | `spatial/` | Processed spatial: SpaceRanger, Xenium, Visium Seurat objects | Main processed deposit |
 | `other/` | CTA, histopathology, public reference atlases | Main processed deposit |
 
-- **Processed data (figures / re-run from matrices):** KTH Data Repository, DOI [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40). Unpack `single_nuclei/`, `spatial/`, and `other/` into `data/`.
+- **Processed data (figures / re-run from matrices):** KTH Data Repository, DOI [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40). Unpack `single_nuclei/`, `spatial/`, and `other/` into `data/`. Install the R environment first: [`../README.md`](../README.md#2-install-environment).
 - **Raw sequencing data:** deposited **separately** upon publication (same folder layout as `raw_data/` below; link from the KTH record). A local `raw_data/` copy may exist during curation but is not required to run the analysis scripts.
 - **Tracking:** directory structure and `.md` files are git-tracked; data files are gitignored. The KTH deposit is the canonical complete copy.
 - **IDs:** breast cancer `patient1`–`patient10`; prostate `pt10` / `pt20`; mouse brain `A` / `B`. No source institution IDs or dates in paths or filenames.

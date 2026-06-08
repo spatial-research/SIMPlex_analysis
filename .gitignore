@@ -27,9 +27,16 @@ figs/**/*.csv
 .RData
 .Ruserdata
 *.Rproj
-# renv: the project uses the conda env in environment/; ignore any local renv setup
-renv/
+# renv: local library under environment/ (lockfile: environment/renv.lock)
+environment/renv/library/
+environment/renv/staging/
+environment/renv/cache/
+environment/renv/index/
+environment/renv/python/
+environment/renv/local/
+environment/renv/cellar/
 .Rprofile
+.Renviron
 
 # ---- OS / editor artifacts --------------------------------------------------
 .DS_Store

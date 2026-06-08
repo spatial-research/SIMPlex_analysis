@@ -11,8 +11,9 @@ SIMPlex (**S**ingle-section **I**ntegrated **M**ulti-layer **P**rofiling) genera
 ## Quick start
 
 1. **Clone** this repository.
-2. **Download** the KTH archive and unpack `data/` and `figs/` on top of the repo root (see [`data/README.md`](data/README.md) and [`figs/README.md`](figs/README.md)).
-3. **Install** the conda environment and run scripts chunk-by-chunk (see [Setup](#setup) below).
+2. **Install** the analysis environment: `bash environment/setup.sh` (see [Setup](#setup)).
+3. **Download** the KTH archive and unpack `data/` and `figs/` on top of the repo root (see [`data/README.md`](data/README.md) and [`figs/README.md`](figs/README.md)).
+4. **Run** scripts chunk-by-chunk in RStudio or Jupyter.
 
 > **Note:** The git checkout tracks directory structure and README files only. Heavy data and figure files are gitignored. The KTH deposit is the canonical source for a complete copy.
 
@@ -24,10 +25,10 @@ SIMPlex (**S**ingle-section **I**ntegrated **M**ulti-layer **P**rofiling) genera
 SIMPlex_analysis/
 ├── README.md
 ├── config.R                       # paths, HDF5 library, shared palettes
-├── environment/                   # conda env (Seurat v5, semla, harmony, …)
+├── environment/                   # environment.yml, renv.lock, setup.sh, renv/library/
 ├── scripts/
 │   ├── rmd/                       # canonical analysis (8 R Markdown files)
-│   └── jupyter/                   # Jupyter exports of the same workflows
+│   └── jupyter/                   # Jupyter exports (kernel: R (simplex renv))
 ├── resources/                     # small git-tracked metadata
 │   ├── sample_metadata.csv
 │   └── human_lr_pair.txt
@@ -112,12 +113,19 @@ cd SIMPlex_analysis
 ### 2. Install environment
 
 ```bash
-conda env create -f environment/environment.yml
-# QC script only — Seurat v4 + DoubletFinder:
-conda env create -f environment/environment-seurat4.yml   # if present
+bash environment/setup.sh
+conda activate simplex
 ```
 
-Main scripts use the `simplex` env (Seurat v5). `qc_doubletRemoval.rmd` needs Seurat v4 + DoubletFinder.
+Creates the `simplex` conda env (from [`environment/environment.yml`](environment/environment.yml)), restores R packages from [`environment/renv.lock`](environment/renv.lock) into `environment/renv/library/`, writes `.Rprofile`, and registers the Jupyter kernel **R (simplex renv)**. First run can take 30–60+ minutes.
+
+| File | Role |
+|------|------|
+| `environment/environment.yml` | Conda: R 4.3.3, system libraries, Jupyter |
+| `environment/renv.lock` | Pinned CRAN / Bioconductor / GitHub R packages |
+| `environment/setup.sh` | Single entry point for install + restore |
+
+**Other envs:** `qc_doubletRemoval.rmd` needs Seurat v4 + DoubletFinder (not in `renv.lock`). CellBender v0.3: [`environment/cellbender.yml`](environment/cellbender.yml).
 
 ### 3. Configure paths
 
@@ -137,11 +145,13 @@ After cloning, download the **processed** archive from the [KTH Data Repository]
 
 ### 5. Run the pipeline
 
-Run chunk-by-chunk in RStudio. Recommended order:
+Open the repo in **RStudio** (or Jupyter — kernel **R (simplex renv)** under `scripts/jupyter/`). With `conda activate simplex`, `.Rprofile` loads the renv library automatically.
+
+Run chunk-by-chunk. Recommended order:
 
 | # | Script | Environment |
 |---|--------|-------------|
-| 1 | `scripts/rmd/qc_doubletRemoval.rmd` | `simplex-seurat4` |
+| 1 | `scripts/rmd/qc_doubletRemoval.rmd` | Seurat v4 + DoubletFinder (separate env) |
 | 2 | `scripts/rmd/breast_cancer/annotation_majorLevel.rmd` | `simplex` |
 | 3 | `scripts/rmd/breast_cancer/analysis_majorLevel.rmd` | `simplex` |
 | 4 | `scripts/rmd/breast_cancer/analysis_cellStateLevel.rmd` | `simplex` |
@@ -150,7 +160,7 @@ Run chunk-by-chunk in RStudio. Recommended order:
 | 7 | `scripts/rmd/mouse_brain/sn_analysis.Rmd` | `simplex` |
 | 8 | `scripts/rmd/mouse_brain/spatial_analysis.Rmd` | `simplex` |
 
-Every script starts with `source(here::here("config.R"))`.
+Every script starts with `source(here::here("config.R"))`. Jupyter notebooks mirror the Rmd files; use the same data layout and kernel.
 
 ---
 

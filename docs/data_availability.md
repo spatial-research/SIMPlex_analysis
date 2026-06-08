@@ -2,6 +2,8 @@
 
 Mirrors the manuscript "Code and Data availability" section. Use alongside [`data/README.md`](../data/README.md) to verify your local copy.
 
+**Reproduce the analysis environment:** `bash environment/setup.sh` then `conda activate simplex` (see [README](../README.md#2-install-environment)).
+
 ## Deposited processed data
 
 **KTH Data Repository** — DOI: [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40)
@@ -78,9 +80,8 @@ No changes to local `data/raw_data/` are required before submission; sequence fi
 
 - CellRanger v7.1.0 — GRCh38 2020-A + Human/Mouse Transcriptome Probe Sets v1.0.1
 - SpaceRanger (Visium CytAssist + Visium HD)
-- CellBender v0.3+
-- R 4.4 — see `environment/installed_packages.csv`
-- Seurat v5.x (main), Seurat v4 + DoubletFinder v2.0.3 (QC only)
-- semla, harmony, RcppML, singlet, igraph, celltalker, CCPlotR, UCell, ggpubr, ggplot2
+- CellBender v0.3+ — separate conda env: [`environment/cellbender.yml`](../environment/cellbender.yml)
+- **R analysis environment** — R 4.3.3, Seurat v5.x, semla, harmony, singlet, … pinned in [`environment/renv.lock`](../environment/renv.lock); conda system libraries in [`environment/environment.yml`](../environment/environment.yml). One-step install: `bash environment/setup.sh`
+- Seurat v4 + DoubletFinder v2.0.3 — `scripts/rmd/qc_doubletRemoval.rmd` only (separate env; not in `renv.lock`)
 - QuPath v5.0.1 (CTA generation)
 - Scanpy v1.9 — Xenium annotation (Python; outside this R repo)

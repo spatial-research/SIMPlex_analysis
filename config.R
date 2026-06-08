@@ -1,5 +1,5 @@
-# config.R — single source of truth for paths, environment, and shared settings.
-# Sourced at the top of every analysis script via `source(here::here("config.R"))`.
+# config.R — paths and shared settings for all analysis scripts.
+# Sourced via `source(here::here("config.R"))` after activating the simplex env (see README).
 
 # ---- 1. Root paths ---------------------------------------------------------
 DATA_ROOT <- here::here("data")
@@ -21,7 +21,7 @@ HISTO_DIR    <- file.path(OTHER_ROOT, "histpathology_visium")
 RESOURCES    <- here::here("resources")
 
 # ---- 2. HDF5 library -------------------------------------------------------
-HDF5_LIB <- "/home/m.abreumachado/apps/hdf5/lib/libhdf5_hl.so.200"
+HDF5_LIB <- "/home/m.abreumachado/apps/hdf5/lib/libhdf5_hl.so.200"  # set NULL if not needed
 if (!is.null(HDF5_LIB) && file.exists(HDF5_LIB)) {
   dyn.load(HDF5_LIB)
 }

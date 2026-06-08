@@ -6,7 +6,7 @@ Script outputs from the SIMPlex pipeline. Figure files (PDF, PNG, HTML, …) are
 
 **DOI:** [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40)
 
-Unpack `figs/` on top of this folder after cloning, or regenerate by running scripts ([pipeline order](../README.md#5-run-the-pipeline)).
+Unpack `figs/` on top of this folder after cloning, or regenerate by running scripts ([setup](../README.md#2-install-environment) · [pipeline order](../README.md#5-run-the-pipeline)).
 
 ## Layout
 
