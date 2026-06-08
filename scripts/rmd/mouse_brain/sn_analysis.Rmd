@@ -82,7 +82,7 @@ snMB.filt <- RunUMAP(snMB.filt, dims = 1:30, verbose = FALSE)
 
 ```{r doubletfinder}
 # Run parameter optimization with paramSweep
-sweep.res <- paramSweep_v3(MB_2.filt, PCs = 1:30, sct = TRUE)
+sweep.res <- paramSweep(MB_2.filt, PCs = 1:30, sct = TRUE)
 sweep.stats <- summarizeSweep(sweep.res, GT = FALSE)
 bcmvn <- find.pK(sweep.stats)
 barplot(bcmvn$BCmetric, names.arg = bcmvn$pK, las=2)
@@ -90,7 +90,7 @@ snMB_pK <- bcmvn$pK[which.max(bcmvn$BCmetric)]
 
 # define the expected number of doublet cells
 nExp <- round(ncol(MB_2.filt)* 0.10)
-MB_2.filt <- doubletFinder_v3(MB_2.filt, pN=0.25, pK = snMB_pK, nExp = nExp, PCs = 1:30, sct = TRUE)
+MB_2.filt <- doubletFinder(MB_2.filt, pN = 0.25, pK = snMB_pK, nExp = nExp, PCs = 1:30, sct = TRUE)
 ```
 
 ## Visualize the doublet finder results

@@ -3,6 +3,26 @@
     "Version": "4.3.3",
     "Repositories": [
       {
+        "Name": "BioCsoft",
+        "URL": "https://bioconductor.org/packages/3.18/bioc"
+      },
+      {
+        "Name": "BioCann",
+        "URL": "https://bioconductor.org/packages/3.18/data/annotation"
+      },
+      {
+        "Name": "BioCexp",
+        "URL": "https://bioconductor.org/packages/3.18/data/experiment"
+      },
+      {
+        "Name": "BioCworkflows",
+        "URL": "https://bioconductor.org/packages/3.18/workflows"
+      },
+      {
+        "Name": "BioCbooks",
+        "URL": "https://bioconductor.org/packages/3.18/books"
+      },
+      {
         "Name": "CRAN",
         "URL": "https://mirror.accum.se/mirror/CRAN"
       }
@@ -12,59 +32,6 @@
     "Version": "3.18"
   },
   "Packages": {
-    "AnnotationDbi": {
-      "Package": "AnnotationDbi",
-      "Version": "1.64.1",
-      "Source": "Bioconductor",
-      "Title": "Manipulation of SQLite-based annotations in Bioconductor",
-      "Description": "Implements a user-friendly interface for querying SQLite-based annotation data packages.",
-      "biocViews": "Annotation, Microarray, Sequencing, GenomeAnnotation",
-      "URL": "https://bioconductor.org/packages/AnnotationDbi",
-      "Video": "https://www.youtube.com/watch?v=8qvGNTVz3Ik",
-      "BugReports": "https://github.com/Bioconductor/AnnotationDbi/issues",
-      "License": "Artistic-2.0",
-      "Encoding": "UTF-8",
-      "Author": "Hervé Pagès, Marc Carlson, Seth Falcon, Nianhua Li",
-      "Maintainer": "Bioconductor Package Maintainer <maintainer@bioconductor.org>",
-      "Depends": [
-        "R (>= 2.7.0)",
-        "methods",
-        "stats4",
-        "BiocGenerics (>= 0.29.2)",
-        "Biobase (>= 1.17.0)",
-        "IRanges"
-      ],
-      "Imports": [
-        "DBI",
-        "RSQLite",
-        "S4Vectors (>= 0.9.25)",
-        "stats",
-        "KEGGREST"
-      ],
-      "Suggests": [
-        "utils",
-        "hgu95av2.db",
-        "GO.db",
-        "org.Sc.sgd.db",
-        "org.At.tair.db",
-        "RUnit",
-        "TxDb.Hsapiens.UCSC.hg19.knownGene",
-        "org.Hs.eg.db",
-        "reactome.db",
-        "AnnotationForge",
-        "graph",
-        "EnsDb.Hsapiens.v75",
-        "BiocStyle",
-        "knitr"
-      ],
-      "VignetteBuilder": "knitr",
-      "Collate": "00RTobjs.R AllGenerics.R AllClasses.R unlist2.R utils.R SQL.R FlatBimap.R AnnDbObj-lowAPI.R Bimap.R GOTerms.R BimapFormatting.R Bimap-envirAPI.R flatten.R methods-AnnotationDb.R methods-SQLiteConnection.R methods-geneCentricDbs.R methods-geneCentricDbs-keys.R methods-ReactomeDb.R methods-OrthologyDb.R loadDb.R createAnnObjs-utils.R createAnnObjs.NCBIORG_DBs.R createAnnObjs.NCBICHIP_DBs.R createAnnObjs.ORGANISM_DB.R createAnnObjs.YEASTCHIP_DB.R createAnnObjs.COELICOLOR_DB.R createAnnObjs.ARABIDOPSISCHIP_DB.R createAnnObjs.MALARIA_DB.R createAnnObjs.YEAST_DB.R createAnnObjs.YEASTNCBI_DB.R createAnnObjs.ARABIDOPSIS_DB.R createAnnObjs.GO_DB.R createAnnObjs.KEGG_DB.R createAnnObjs.PFAM_DB.R AnnDbPkg-templates-common.R AnnDbPkg-checker.R print.probetable.R makeMap.R inpIDMapper.R test_AnnotationDbi_package.R",
-      "git_url": "https://git.bioconductor.org/packages/AnnotationDbi",
-      "git_branch": "RELEASE_3_18",
-      "git_last_commit": "e5b997e",
-      "git_last_commit_date": "2023-11-01",
-      "NeedsCompilation": "no"
-    },
     "BH": {
       "Package": "BH",
       "Version": "1.87.0-1",
@@ -307,54 +274,6 @@
       "Author": "Martin Morgan [aut, cre], Jiefei Wang [aut], Valerie Obenchain [aut], Michel Lang [aut], Ryan Thompson [aut], Nitesh Turaga [aut], Aaron Lun [ctb], Henrik Bengtsson [ctb], Madelyn Carlson [ctb] (Translated 'Random Numbers' vignette from Sweave to RMarkdown / HTML.), Phylis Atieno [ctb] (Translated 'Introduction to BiocParallel' vignette from Sweave to Rmarkdown / HTML.), Sergio Oller [ctb] (Improved bpmapply() efficiency., <https://orcid.org/0000-0002-8994-1549>)",
       "Maintainer": "Martin Morgan <mtmorgan.bioc@gmail.com>"
     },
-    "BiocSingular": {
-      "Package": "BiocSingular",
-      "Version": "1.18.0",
-      "Source": "Bioconductor",
-      "Date": "2023-07-07",
-      "Title": "Singular Value Decomposition for Bioconductor Packages",
-      "Authors@R": "c(person(\"Aaron\", \"Lun\", role=c(\"aut\", \"cre\", \"cph\"), email=\"infinite.monkeys.with.keyboards@gmail.com\"))",
-      "Imports": [
-        "BiocGenerics",
-        "S4Vectors",
-        "Matrix",
-        "methods",
-        "utils",
-        "DelayedArray",
-        "BiocParallel",
-        "ScaledMatrix",
-        "irlba",
-        "rsvd",
-        "Rcpp",
-        "beachmat"
-      ],
-      "Suggests": [
-        "testthat",
-        "BiocStyle",
-        "knitr",
-        "rmarkdown",
-        "ResidualMatrix"
-      ],
-      "biocViews": "Software, DimensionReduction, PrincipalComponent",
-      "Description": "Implements exact and approximate methods for singular value decomposition and principal components analysis, in a framework that allows them to be easily switched within Bioconductor packages or  workflows. Where possible, parallelization is achieved using  the BiocParallel framework.",
-      "License": "GPL-3",
-      "LinkingTo": [
-        "Rcpp",
-        "beachmat"
-      ],
-      "VignetteBuilder": "knitr",
-      "SystemRequirements": "C++17",
-      "RoxygenNote": "7.2.3",
-      "BugReports": "https://github.com/LTLA/BiocSingular/issues",
-      "URL": "https://github.com/LTLA/BiocSingular",
-      "git_url": "https://git.bioconductor.org/packages/BiocSingular",
-      "git_branch": "RELEASE_3_18",
-      "git_last_commit": "53deff4",
-      "git_last_commit_date": "2023-10-24",
-      "NeedsCompilation": "yes",
-      "Author": "Aaron Lun [aut, cre, cph]",
-      "Maintainer": "Aaron Lun <infinite.monkeys.with.keyboards@gmail.com>"
-    },
     "BiocVersion": {
       "Package": "BiocVersion",
       "Version": "3.18.1",
@@ -376,71 +295,6 @@
       "NeedsCompilation": "no",
       "Author": "Martin Morgan [aut], Marcel Ramos [ctb], Bioconductor Package Maintainer [ctb, cre]",
       "Maintainer": "Bioconductor Package Maintainer <maintainer@bioconductor.org>"
-    },
-    "Biostrings": {
-      "Package": "Biostrings",
-      "Version": "2.70.3",
-      "Source": "Bioconductor",
-      "Title": "Efficient manipulation of biological strings",
-      "Description": "Memory efficient string containers, string matching algorithms, and other utilities, for fast manipulation of large biological sequences or sets of sequences.",
-      "biocViews": "SequenceMatching, Alignment, Sequencing, Genetics, DataImport, DataRepresentation, Infrastructure",
-      "URL": "https://bioconductor.org/packages/Biostrings",
-      "BugReports": "https://github.com/Bioconductor/Biostrings/issues",
-      "License": "Artistic-2.0",
-      "Encoding": "UTF-8",
-      "Authors@R": "c( person(\"Hervé\", \"Pagès\", role=c(\"aut\", \"cre\"), email=\"hpages.on.github@gmail.com\"), person(\"Patrick\", \"Aboyoun\", role=\"aut\"), person(\"Robert\", \"Gentleman\", role=\"aut\"), person(\"Saikat\", \"DebRoy\", role=\"aut\"), person(\"Vince\", \"Carey\", role=\"ctb\"), person(\"Nicolas\", \"Delhomme\", role=\"ctb\"), person(\"Felix\", \"Ernst\", role=\"ctb\"), person(\"Haleema\", \"Khan\", role=\"ctb\", comment=\"Converted 'matchprobes' vignette from Sweave to RMarkdown\"), person(\"Aidan\", \"Lakshman\", role=\"ctb\"), person(\"Kieran\", \"O'Neill\", role=\"ctb\"), person(\"Valerie\", \"Obenchain\", role=\"ctb\"), person(\"Marcel\", \"Ramos\", role=\"ctb\"), person(\"Albert\", \"Vill\", role=\"ctb\"), person(\"Jen\", \"Wokaty\", role=\"ctb\", comment=\"Converted 'matchprobes' vignette from Sweave to RMarkdown\"), person(\"Erik\", \"Wright\", role=\"ctb\"))",
-      "Depends": [
-        "R (>= 4.0.0)",
-        "methods",
-        "BiocGenerics (>= 0.37.0)",
-        "S4Vectors (>= 0.27.12)",
-        "IRanges (>= 2.31.2)",
-        "XVector (>= 0.37.1)",
-        "GenomeInfoDb"
-      ],
-      "Imports": [
-        "methods",
-        "utils",
-        "grDevices",
-        "graphics",
-        "stats",
-        "crayon"
-      ],
-      "LinkingTo": [
-        "S4Vectors",
-        "IRanges",
-        "XVector"
-      ],
-      "Enhances": [
-        "Rmpi"
-      ],
-      "Suggests": [
-        "BSgenome (>= 1.13.14)",
-        "BSgenome.Celegans.UCSC.ce2 (>= 1.3.11)",
-        "BSgenome.Dmelanogaster.UCSC.dm3 (>= 1.3.11)",
-        "BSgenome.Hsapiens.UCSC.hg18",
-        "drosophila2probe",
-        "hgu95av2probe",
-        "hgu133aprobe",
-        "GenomicFeatures (>= 1.3.14)",
-        "hgu95av2cdf",
-        "affy (>= 1.41.3)",
-        "affydata (>= 1.11.5)",
-        "RUnit",
-        "BiocStyle",
-        "knitr"
-      ],
-      "VignetteBuilder": "knitr",
-      "LazyLoad": "yes",
-      "Collate": "00datacache.R utils.R IUPAC_CODE_MAP.R AMINO_ACID_CODE.R GENETIC_CODE.R XStringCodec-class.R seqtype.R coloring.R XString-class.R XStringSet-class.R XStringSet-comparison.R XStringViews-class.R MaskedXString-class.R XStringSetList-class.R seqinfo-methods.R xscat.R XStringSet-io.R letter.R getSeq.R letterFrequency.R dinucleotideFrequencyTest.R chartr.R reverseComplement.R translate.R toComplex.R replaceAt.R replaceLetterAt.R injectHardMask.R padAndClip.R strsplit-methods.R misc.R SparseList-class.R MIndex-class.R lowlevel-matching.R match-utils.R matchPattern.R maskMotif.R matchLRPatterns.R trimLRPatterns.R matchProbePair.R matchPWM.R findPalindromes.R PDict-class.R matchPDict.R XStringPartialMatches-class.R XStringQuality-class.R QualityScaledXStringSet.R InDel-class.R AlignedXStringSet-class.R PairwiseAlignments-class.R PairwiseAlignmentsSingleSubject-class.R PairwiseAlignments-io.R align-utils.R pmatchPattern.R pairwiseAlignment.R stringDist.R needwunsQS.R MultipleAlignment.R matchprobes.R zzz.R",
-      "git_url": "https://git.bioconductor.org/packages/Biostrings",
-      "git_branch": "RELEASE_3_18",
-      "git_last_commit": "c213e35",
-      "git_last_commit_date": "2024-03-12",
-      "Repository": "Bioconductor 3.18",
-      "NeedsCompilation": "yes",
-      "Author": "Hervé Pagès [aut, cre], Patrick Aboyoun [aut], Robert Gentleman [aut], Saikat DebRoy [aut], Vince Carey [ctb], Nicolas Delhomme [ctb], Felix Ernst [ctb], Haleema Khan [ctb] (Converted 'matchprobes' vignette from Sweave to RMarkdown), Aidan Lakshman [ctb], Kieran O'Neill [ctb], Valerie Obenchain [ctb], Marcel Ramos [ctb], Albert Vill [ctb], Jen Wokaty [ctb] (Converted 'matchprobes' vignette from Sweave to RMarkdown), Erik Wright [ctb]",
-      "Maintainer": "Hervé Pagès <hpages.on.github@gmail.com>"
     },
     "CCPlotR": {
       "Package": "CCPlotR",
@@ -585,64 +439,14 @@
       "biocViews": "Software, Visualization, Sequencing",
       "URL": "https://github.com/jokergoo/ComplexHeatmap, https://jokergoo.github.io/ComplexHeatmap-reference/book/",
       "License": "MIT + file LICENSE",
+      "Author": "Zuguang Gu [aut, cre] (<https://orcid.org/0000-0002-7395-8709>)",
+      "Maintainer": "Zuguang Gu <z.gu@dkfz.de>",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "ComplexHeatmap",
       "RemoteUsername": "jokergoo",
       "RemoteRef": "HEAD",
-      "RemoteSha": "3398d2157df844f4acd5202148dd87a54ca7cb62",
-      "NeedsCompilation": "no",
-      "Author": "Zuguang Gu [aut, cre] (<https://orcid.org/0000-0002-7395-8709>)",
-      "Maintainer": "Zuguang Gu <z.gu@dkfz.de>"
-    },
-    "DBI": {
-      "Package": "DBI",
-      "Version": "1.2.3",
-      "Source": "Repository",
-      "Title": "R Database Interface",
-      "Date": "2024-06-02",
-      "Authors@R": "c( person(\"R Special Interest Group on Databases (R-SIG-DB)\", role = \"aut\"), person(\"Hadley\", \"Wickham\", role = \"aut\"), person(\"Kirill\", \"Müller\", , \"kirill@cynkra.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-1416-3412\")), person(\"R Consortium\", role = \"fnd\") )",
-      "Description": "A database interface definition for communication between R and relational database management systems.  All classes in this package are virtual and need to be extended by the various R/DBMS implementations.",
-      "License": "LGPL (>= 2.1)",
-      "URL": "https://dbi.r-dbi.org, https://github.com/r-dbi/DBI",
-      "BugReports": "https://github.com/r-dbi/DBI/issues",
-      "Depends": [
-        "methods",
-        "R (>= 3.0.0)"
-      ],
-      "Suggests": [
-        "arrow",
-        "blob",
-        "covr",
-        "DBItest",
-        "dbplyr",
-        "downlit",
-        "dplyr",
-        "glue",
-        "hms",
-        "knitr",
-        "magrittr",
-        "nanoarrow (>= 0.3.0.1)",
-        "RMariaDB",
-        "rmarkdown",
-        "rprojroot",
-        "RSQLite (>= 1.1-2)",
-        "testthat (>= 3.0.0)",
-        "vctrs",
-        "xml2"
-      ],
-      "VignetteBuilder": "knitr",
-      "Config/autostyle/scope": "line_breaks",
-      "Config/autostyle/strict": "false",
-      "Config/Needs/check": "r-dbi/DBItest",
-      "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.1",
-      "Config/Needs/website": "r-dbi/DBItest, r-dbi/dbitemplate, adbi, AzureKusto, bigrquery, DatabaseConnector, dittodb, duckdb, implyr, lazysf, odbc, pool, RAthena, IMSMWU/RClickhouse, RH2, RJDBC, RMariaDB, RMySQL, RPostgres, RPostgreSQL, RPresto, RSQLite, sergeant, sparklyr, withr",
-      "Config/testthat/edition": "3",
-      "NeedsCompilation": "no",
-      "Author": "R Special Interest Group on Databases (R-SIG-DB) [aut], Hadley Wickham [aut], Kirill Müller [aut, cre] (<https://orcid.org/0000-0002-1416-3412>), R Consortium [fnd]",
-      "Maintainer": "Kirill Müller <kirill@cynkra.com>",
-      "Repository": "CRAN"
+      "RemoteSha": "3398d2157df844f4acd5202148dd87a54ca7cb62"
     },
     "DelayedArray": {
       "Package": "DelayedArray",
@@ -745,72 +549,38 @@
     },
     "DoubletFinder": {
       "Package": "DoubletFinder",
-      "Version": "2.0.4",
+      "Version": "2.0.6",
       "Source": "GitHub",
       "Type": "Package",
-      "Title": "DoubletFinder is a suite of tools for identifying doublets in single-cell RNA sequencing data.",
-      "Author": "person(\"Chris\", \"McGinnis\", email = \"cmcginni92@gmail.com\", role = c(\"aut\",\"cre\"))",
+      "Title": "DoubletFinder is a suite of tools for identifying doublets in single-cell RNA sequencing data",
+      "Author": "c(person(\"Chris\", \"McGinnis\", email = \"cmcginni@stanford.edu\", role = c(\"aut\",\"cre\")), person(\"Haibo\", \"Liu\", ,  email = \"haibo.liu@umassmed.edu\", role = c(\"cre\"), comment = c(ORCID = \"0000-0002-4213-2883\")))",
+      "Maintainer": "<cmcginni92@gmail.com>",
+      "Description": "DoubletFinder identifies doublets by generating artificial doublets from existing scRNA-seq data and defining which real cells preferentially co-localize with artificial doublets in gene expression space. Other DoubletFinder package functions are used for fitting DoubletFinder to different scRNA-seq datasets. For example, ideal DoubletFinder performance in real-world contexts requires (I) Optimal pK selection and (2) Homotypic doublet proportion estimation. pK selection is achieved using pN-pK parameter sweeps and maxima identification in mean-variance-normalized bimodality coefficient distributions. Homotypic doublet proportion estimation is achieved by finding the sum of squared cell annotation frequencies. For more information, see our Cell Sysmtes paper https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30073-0 and our github https://github.com/chris-mcginnis-ucsf/DoubletFinder.",
+      "License": "CC0",
+      "Depends": [
+        "R (>= 4.0.0)"
+      ],
       "Imports": [
         "fields",
         "KernSmooth",
+        "parallel",
         "ROCR",
-        "parallel"
+        "Seurat",
+        "SeuratObject"
       ],
-      "Maintainer": "<cmcginni92@gmail.com>",
-      "Description": "DoubletFinder identifies doublets by generating artificial doublets from existing scRNA-seq data and defining which real cells preferentially co-localize with artificial doublets in gene expression space.    Other DoubletFinder package functions are used for fitting DoubletFinder to different scRNA-seq datasets. For example, ideal DoubletFinder performance in real-world contexts requires (I) Optimal pK selection and (2) Homotypic doublet proportion estimation. pK selection is achieved using pN-pK parameter sweeps and maxima identification in mean-variance-normalized bimodality coefficient distributions. Homotypic doublet proportion estimation is achieved by finding the sum of squared cell annotation frequencies.    For more information, see our Cell Sysmtes paper https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30073-0 and our github https://github.com/chris-mcginnis-ucsf/DoubletFinder",
-      "License": "CC-0",
+      "Suggests": [
+        "testthat"
+      ],
       "Encoding": "UTF-8",
+      "LazyData": "true",
+      "RoxygenNote": "7.3.2",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "DoubletFinder",
       "RemoteUsername": "chris-mcginnis-ucsf",
       "RemoteRef": "HEAD",
-      "RemoteSha": "03e9f37f891ef76a23cc55ea69f940c536ae8f9f",
+      "RemoteSha": "1b244d8f0d54b4b1cb4365639931bbb16f01e1cd",
       "NeedsCompilation": "no"
-    },
-    "EnhancedVolcano": {
-      "Package": "EnhancedVolcano",
-      "Version": "1.13.2",
-      "Source": "GitHub",
-      "Type": "Package",
-      "Title": "Publication-ready volcano plots with enhanced colouring and labeling",
-      "Authors@R": "c( person(\"Kevin\", \"Blighe\", role = c(\"aut\", \"cre\"), email = \"kevin@clinicalbioinformatics.co.uk\"), person(\"Sharmila\", \"Rana\", role = c(\"aut\")), person(\"Emir\", \"Turkes\", role = c(\"ctb\")), person(\"Benjamin\", \"Ostendorf\", role = c(\"ctb\")), person(\"Andrea\", \"Grioni\", role = c(\"ctb\")), person(\"Myles\", \"Lewis\", role = c(\"aut\")))",
-      "Maintainer": "Kevin Blighe <kevin@clinicalbioinformatics.co.uk>",
-      "Description": "Volcano plots represent a useful way to visualise the results of differential expression analyses. Here, we present a highly-configurable function that produces publication-ready volcano plots. EnhancedVolcano will attempt to fit as many point labels in the plot window as possible, thus avoiding 'clogging' up the plot with labels that could not otherwise have been read. Other functionality allows the user to identify up to 4 different types of attributes in the same plot space via colour, shape, size, and shade parameter configurations.",
-      "License": "GPL-3",
-      "Depends": [
-        "ggplot2",
-        "ggrepel"
-      ],
-      "Imports": [
-        "methods"
-      ],
-      "Suggests": [
-        "ggalt",
-        "ggrastr",
-        "RUnit",
-        "BiocGenerics",
-        "knitr",
-        "DESeq2",
-        "pasilla",
-        "airway",
-        "org.Hs.eg.db",
-        "gridExtra",
-        "magrittr",
-        "rmarkdown"
-      ],
-      "URL": "https://github.com/kevinblighe/EnhancedVolcano",
-      "biocViews": "RNASeq, GeneExpression, Transcription, DifferentialExpression, ImmunoOncology",
-      "VignetteBuilder": "knitr",
-      "RoxygenNote": "7.1.2",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "EnhancedVolcano",
-      "RemoteUsername": "kevinblighe",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "ab0428ef29e2a3bf35aec63d4eeb8f9302963645",
-      "NeedsCompilation": "no",
-      "Author": "Kevin Blighe [aut, cre], Sharmila Rana [aut], Emir Turkes [ctb], Benjamin Ostendorf [ctb], Andrea Grioni [ctb], Myles Lewis [aut]"
     },
     "FNN": {
       "Package": "FNN",
@@ -1144,40 +914,6 @@
       "Author": "Hervé Pagès [aut, cre], Patrick Aboyoun [aut], Michael Lawrence [aut]",
       "Maintainer": "Hervé Pagès <hpages.on.github@gmail.com>"
     },
-    "KEGGREST": {
-      "Package": "KEGGREST",
-      "Version": "1.42.0",
-      "Source": "Bioconductor",
-      "Title": "Client-side REST access to the Kyoto Encyclopedia of Genes and Genomes (KEGG)",
-      "Authors@R": "c( person(\"Dan\", \"Tenenbaum\", role = \"aut\"), person(\"Jeremy\", \"Volkening\", role = \"ctb\"), person( \"Bioconductor Package\", \"Maintainer\", email = \"maintainer@bioconductor.org\", role = c(\"aut\", \"cre\")) )",
-      "Depends": [
-        "R (>= 3.5.0)"
-      ],
-      "Imports": [
-        "methods",
-        "httr",
-        "png",
-        "Biostrings"
-      ],
-      "Suggests": [
-        "RUnit",
-        "BiocGenerics",
-        "knitr",
-        "markdown"
-      ],
-      "Description": "A package that provides a client interface to the Kyoto Encyclopedia of Genes and Genomes (KEGG) REST server. Based on KEGGSOAP by J. Zhang, R. Gentleman, and Marc Carlson, and KEGG (python package) by Aurelien Mazurie.",
-      "License": "Artistic-2.0",
-      "VignetteBuilder": "knitr",
-      "biocViews": "Annotation, Pathways, ThirdPartyClient, KEGG",
-      "RoxygenNote": "7.1.1",
-      "git_url": "https://git.bioconductor.org/packages/KEGGREST",
-      "git_branch": "RELEASE_3_18",
-      "git_last_commit": "2676f9d",
-      "git_last_commit_date": "2023-10-24",
-      "NeedsCompilation": "no",
-      "Author": "Dan Tenenbaum [aut], Jeremy Volkening [ctb], Bioconductor Package Maintainer [aut, cre]",
-      "Maintainer": "Bioconductor Package Maintainer <maintainer@bioconductor.org>"
-    },
     "KernSmooth": {
       "Package": "KernSmooth",
       "Version": "2.23-26",
@@ -1444,60 +1180,6 @@
       "Maintainer": "Felix G.M. Ernst <felix.gm.ernst@outlook.com>",
       "Repository": "CRAN"
     },
-    "RSQLite": {
-      "Package": "RSQLite",
-      "Version": "2.3.7",
-      "Source": "Repository",
-      "Title": "SQLite Interface for R",
-      "Date": "2024-05-26",
-      "Authors@R": "c( person(\"Kirill\", \"Müller\", , \"kirill@cynkra.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-1416-3412\")), person(\"Hadley\", \"Wickham\", role = \"aut\"), person(c(\"David\", \"A.\"), \"James\", role = \"aut\"), person(\"Seth\", \"Falcon\", role = \"aut\"), person(\"D. Richard\", \"Hipp\", role = \"ctb\", comment = \"for the included SQLite sources\"), person(\"Dan\", \"Kennedy\", role = \"ctb\", comment = \"for the included SQLite sources\"), person(\"Joe\", \"Mistachkin\", role = \"ctb\", comment = \"for the included SQLite sources\"), person(, \"SQLite Authors\", role = \"ctb\", comment = \"for the included SQLite sources\"), person(\"Liam\", \"Healy\", role = \"ctb\", comment = \"for the included SQLite sources\"), person(\"R Consortium\", role = \"fnd\"), person(, \"RStudio\", role = \"cph\") )",
-      "Description": "Embeds the SQLite database engine in R and provides an interface compliant with the DBI package. The source for the SQLite engine and for various extensions in a recent version is included. System libraries will never be consulted because this package relies on static linking for the plugins it includes; this also ensures a consistent experience across all installations.",
-      "License": "LGPL (>= 2.1)",
-      "URL": "https://rsqlite.r-dbi.org, https://github.com/r-dbi/RSQLite",
-      "BugReports": "https://github.com/r-dbi/RSQLite/issues",
-      "Depends": [
-        "R (>= 3.1.0)"
-      ],
-      "Imports": [
-        "bit64",
-        "blob (>= 1.2.0)",
-        "DBI (>= 1.2.0)",
-        "memoise",
-        "methods",
-        "pkgconfig",
-        "rlang"
-      ],
-      "Suggests": [
-        "callr",
-        "DBItest (>= 1.8.0)",
-        "gert",
-        "gh",
-        "hms",
-        "knitr",
-        "magrittr",
-        "rmarkdown",
-        "rvest",
-        "testthat (>= 3.0.0)",
-        "withr",
-        "xml2"
-      ],
-      "LinkingTo": [
-        "plogr (>= 0.2.0)",
-        "cpp11 (>= 0.4.0)"
-      ],
-      "VignetteBuilder": "knitr",
-      "Config/Needs/website": "r-dbi/dbitemplate",
-      "Config/autostyle/scope": "line_breaks",
-      "Config/autostyle/strict": "false",
-      "Config/testthat/edition": "3",
-      "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.1",
-      "Collate": "'SQLiteConnection.R' 'SQLKeywords_SQLiteConnection.R' 'SQLiteDriver.R' 'SQLite.R' 'SQLiteResult.R' 'coerce.R' 'compatRowNames.R' 'copy.R' 'cpp11.R' 'datasetsDb.R' 'dbAppendTable_SQLiteConnection.R' 'dbBeginTransaction.R' 'dbBegin_SQLiteConnection.R' 'dbBind_SQLiteResult.R' 'dbClearResult_SQLiteResult.R' 'dbColumnInfo_SQLiteResult.R' 'dbCommit_SQLiteConnection.R' 'dbConnect_SQLiteConnection.R' 'dbConnect_SQLiteDriver.R' 'dbDataType_SQLiteConnection.R' 'dbDataType_SQLiteDriver.R' 'dbDisconnect_SQLiteConnection.R' 'dbExistsTable_SQLiteConnection_Id.R' 'dbExistsTable_SQLiteConnection_character.R' 'dbFetch_SQLiteResult.R' 'dbGetException_SQLiteConnection.R' 'dbGetInfo_SQLiteConnection.R' 'dbGetInfo_SQLiteDriver.R' 'dbGetPreparedQuery.R' 'dbGetPreparedQuery_SQLiteConnection_character_data.frame.R' 'dbGetRowCount_SQLiteResult.R' 'dbGetRowsAffected_SQLiteResult.R' 'dbGetStatement_SQLiteResult.R' 'dbHasCompleted_SQLiteResult.R' 'dbIsValid_SQLiteConnection.R' 'dbIsValid_SQLiteDriver.R' 'dbIsValid_SQLiteResult.R' 'dbListResults_SQLiteConnection.R' 'dbListTables_SQLiteConnection.R' 'dbQuoteIdentifier_SQLiteConnection_SQL.R' 'dbQuoteIdentifier_SQLiteConnection_character.R' 'dbReadTable_SQLiteConnection_character.R' 'dbRemoveTable_SQLiteConnection_character.R' 'dbRollback_SQLiteConnection.R' 'dbSendPreparedQuery.R' 'dbSendPreparedQuery_SQLiteConnection_character_data.frame.R' 'dbSendQuery_SQLiteConnection_character.R' 'dbUnloadDriver_SQLiteDriver.R' 'dbUnquoteIdentifier_SQLiteConnection_SQL.R' 'dbWriteTable_SQLiteConnection_character_character.R' 'dbWriteTable_SQLiteConnection_character_data.frame.R' 'db_bind.R' 'deprecated.R' 'export.R' 'fetch_SQLiteResult.R' 'import-standalone-check_suggested.R' 'import-standalone-purrr.R' 'initExtension.R' 'initRegExp.R' 'isSQLKeyword_SQLiteConnection_character.R' 'make.db.names_SQLiteConnection_character.R' 'pkgconfig.R' 'show_SQLiteConnection.R' 'sqlData_SQLiteConnection.R' 'table.R' 'transactions.R' 'utils.R' 'version.R' 'zzz.R'",
-      "NeedsCompilation": "yes",
-      "Author": "Kirill Müller [aut, cre] (<https://orcid.org/0000-0002-1416-3412>), Hadley Wickham [aut], David A. James [aut], Seth Falcon [aut], D. Richard Hipp [ctb] (for the included SQLite sources), Dan Kennedy [ctb] (for the included SQLite sources), Joe Mistachkin [ctb] (for the included SQLite sources), SQLite Authors [ctb] (for the included SQLite sources), Liam Healy [ctb] (for the included SQLite sources), R Consortium [fnd], RStudio [cph]",
-      "Maintainer": "Kirill Müller <kirill@cynkra.com>",
-      "Repository": "CRAN"
-    },
     "RSpectra": {
       "Package": "RSpectra",
       "Version": "0.16-2",
@@ -1732,18 +1414,14 @@
       "URL": "https://github.com/zdebruine/RcppML",
       "BugReports": "https://github.com/zdebruine/RcppML/issues",
       "Encoding": "UTF-8",
+      "Author": "Zach DeBruine [aut, cre] (<https://orcid.org/0000-0003-2234-4827>)",
+      "Maintainer": "Zach DeBruine <zacharydebruine@gmail.com>",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "RcppML",
       "RemoteUsername": "zdebruine",
       "RemoteRef": "HEAD",
-      "RemoteSha": "5449a5b479908f40f56cf911f11e0a7e156d207f",
-      "NeedsCompilation": "yes",
-      "Author": "Zach DeBruine [aut, cre] (<https://orcid.org/0000-0003-2234-4827>)",
-      "Maintainer": "Zach DeBruine <zacharydebruine@gmail.com>",
-      "Depends": [
-        "R (>= 3.5.0)"
-      ]
+      "RemoteSha": "5449a5b479908f40f56cf911f11e0a7e156d207f"
     },
     "RcppProgress": {
       "Package": "RcppProgress",
@@ -2011,42 +1689,6 @@
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
       "Repository": "CRAN"
     },
-    "ScaledMatrix": {
-      "Package": "ScaledMatrix",
-      "Version": "1.10.0",
-      "Source": "Bioconductor",
-      "Date": "2023-05-03",
-      "Title": "Creating a DelayedMatrix of Scaled and Centered Values",
-      "Authors@R": "person(\"Aaron\", \"Lun\", role=c(\"aut\", \"cre\", \"cph\"), email=\"infinite.monkeys.with.keyboards@gmail.com\")",
-      "Imports": [
-        "methods",
-        "Matrix",
-        "S4Vectors",
-        "DelayedArray"
-      ],
-      "Suggests": [
-        "testthat",
-        "BiocStyle",
-        "knitr",
-        "rmarkdown",
-        "BiocSingular",
-        "DelayedMatrixStats"
-      ],
-      "biocViews": "Software, DataRepresentation",
-      "Description": "Provides delayed computation of a matrix of scaled and centered values. The result is equivalent to using the scale() function but avoids explicit  realization of a dense matrix during block processing. This permits greater efficiency in common operations, most notably matrix multiplication.",
-      "License": "GPL-3",
-      "VignetteBuilder": "knitr",
-      "RoxygenNote": "7.1.1",
-      "BugReports": "https://github.com/LTLA/ScaledMatrix/issues",
-      "URL": "https://github.com/LTLA/ScaledMatrix",
-      "git_url": "https://git.bioconductor.org/packages/ScaledMatrix",
-      "git_branch": "RELEASE_3_18",
-      "git_last_commit": "90e51ba",
-      "git_last_commit_date": "2023-10-24",
-      "NeedsCompilation": "no",
-      "Author": "Aaron Lun [aut, cre, cph]",
-      "Maintainer": "Aaron Lun <infinite.monkeys.with.keyboards@gmail.com>"
-    },
     "Seurat": {
       "Package": "Seurat",
       "Version": "5.2.1",
@@ -2179,8 +1821,8 @@
       "BugReports": "https://github.com/mojaveazure/seurat-disk/issues",
       "License": "GPL-3 | file LICENSE",
       "Encoding": "UTF-8",
+      "LazyData": "true",
       "RoxygenNote": "7.2.3",
-      "Remotes": "satijalab/seurat-data",
       "Depends": [
         "R (>= 3.6.0)"
       ],
@@ -2208,15 +1850,15 @@
         "SeuratData"
       ],
       "VignetteBuilder": "knitr",
+      "Author": "Paul Hoffman [aut, cre] (<https://orcid.org/0000-0002-7693-8957>), Rahul Satija [ctb] (<https://orcid.org/0000-0001-9448-8833>)",
+      "Maintainer": "Paul Hoffman <phoffman@nygenome.org>",
       "RemoteType": "github",
+      "Remotes": "satijalab/seurat-data",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "seurat-disk",
       "RemoteUsername": "mojaveazure",
       "RemoteRef": "HEAD",
-      "RemoteSha": "877d4e18ab38c686f5db54f8cd290274ccdbe295",
-      "NeedsCompilation": "no",
-      "Author": "Paul Hoffman [aut, cre] (<https://orcid.org/0000-0002-7693-8957>), Rahul Satija [ctb] (<https://orcid.org/0000-0001-9448-8833>)",
-      "Maintainer": "Paul Hoffman <phoffman@nygenome.org>"
+      "RemoteSha": "877d4e18ab38c686f5db54f8cd290274ccdbe295"
     },
     "SeuratObject": {
       "Package": "SeuratObject",
@@ -2318,71 +1960,6 @@
       "NeedsCompilation": "no",
       "Author": "Aaron Lun [aut, cph], Davide Risso [aut, cre, cph], Keegan Korthauer [ctb], Kevin Rue-Albrecht [ctb]",
       "Maintainer": "Davide Risso <risso.davide@gmail.com>"
-    },
-    "SingleR": {
-      "Package": "SingleR",
-      "Version": "2.4.1",
-      "Source": "Bioconductor",
-      "Title": "Reference-Based Single-Cell RNA-Seq Annotation",
-      "Date": "2024-01-05",
-      "Authors@R": "c(person(\"Dvir\", \"Aran\", email=\"dvir.aran@ucsf.edu\", role=c(\"aut\", \"cph\")), person(\"Aaron\", \"Lun\", email=\"infinite.monkeys.with.keyboards@gmail.com\", role=c(\"ctb\", \"cre\")), person(\"Daniel\", \"Bunis\", role=\"ctb\"), person(\"Jared\", \"Andrews\", email = \"jared.andrews07@gmail.com\", role=\"ctb\"), person(\"Friederike\", \"Dündar\", email = \"frd2007@med.cornell.edu\", role=\"ctb\"))",
-      "Description": "Performs unbiased cell type recognition from single-cell RNA sequencing data, by leveraging reference transcriptomic datasets of pure cell types to infer the cell of origin of each single cell independently.",
-      "License": "GPL-3 + file LICENSE",
-      "Depends": [
-        "SummarizedExperiment"
-      ],
-      "Imports": [
-        "methods",
-        "Matrix",
-        "S4Vectors",
-        "DelayedArray",
-        "DelayedMatrixStats",
-        "BiocParallel",
-        "BiocSingular",
-        "stats",
-        "utils",
-        "Rcpp",
-        "beachmat",
-        "parallel"
-      ],
-      "LinkingTo": [
-        "Rcpp",
-        "beachmat",
-        "BiocNeighbors"
-      ],
-      "Suggests": [
-        "testthat",
-        "knitr",
-        "rmarkdown",
-        "BiocStyle",
-        "BiocGenerics",
-        "SingleCellExperiment",
-        "scuttle",
-        "scater",
-        "scran",
-        "scRNAseq",
-        "ggplot2",
-        "pheatmap",
-        "grDevices",
-        "gridExtra",
-        "viridis",
-        "celldex"
-      ],
-      "biocViews": "Software, SingleCell, GeneExpression, Transcriptomics, Classification, Clustering, Annotation",
-      "SystemRequirements": "C++17",
-      "VignetteBuilder": "knitr",
-      "Encoding": "UTF-8",
-      "RoxygenNote": "7.2.3",
-      "URL": "https://github.com/LTLA/SingleR",
-      "BugReports": "https://support.bioconductor.org/",
-      "git_url": "https://git.bioconductor.org/packages/SingleR",
-      "git_branch": "RELEASE_3_18",
-      "git_last_commit": "fab56fd",
-      "git_last_commit_date": "2024-01-05",
-      "Repository": "Bioconductor 3.18",
-      "NeedsCompilation": "yes",
-      "Author": "Dvir Aran [aut, cph], Aaron Lun [ctb, cre], Daniel Bunis [ctb], Jared Andrews [ctb], Friederike Dündar [ctb]",
-      "Maintainer": "Aaron Lun <infinite.monkeys.with.keyboards@gmail.com>"
     },
     "SparseArray": {
       "Package": "SparseArray",
@@ -2606,82 +2183,6 @@
       "NeedsCompilation": "no",
       "Author": "Tony Plate [aut, cre], Richard Heiberger [aut]",
       "Repository": "CRAN"
-    },
-    "anndata": {
-      "Package": "anndata",
-      "Version": "0.7.5.6",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "'anndata' for R",
-      "Authors@R": "c(person(given = \"Philipp\", family = \"Angerer\", role = \"ccp\", email = \"phil.angerer@gmail.com\", comment = c(ORCID = \"0000-0002-0369-2888\", github = \"flying-sheep\")), person(given = \"Alex\", family = \"Wolf\", role = \"ccp\", email = \"f.alex.wolf@gmx.de\", comment = c(ORCID = \"0000-0002-8760-7838\", github = \"falexwolf\")), person(given = \"Isaac\", family = \"Virshup\", role = \"ccp\", comment = c(github = \"ivirshup\")), person(given = \"Sergei\", family = \"Rybakov\", role = \"ccp\", comment = c(github = \"Koncopd\")), person(given = \"Robrecht\", family = \"Cannoodt\", role = c(\"aut\", \"cre\", \"cph\"), email = \"rcannood@gmail.com\", comment = c(ORCID = \"0000-0003-3641-729X\", github = \"rcannood\")))",
-      "Description": "A 'reticulate' wrapper for the Python package 'anndata'. Provides a scalable way of keeping track of data and learned annotations.  Used to read from and write to the h5ad file format.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://anndata.dynverse.org, https://github.com/dynverse/anndata",
-      "BugReports": "https://github.com/dynverse/anndata/issues",
-      "Depends": [
-        "R (>= 3.5.0)"
-      ],
-      "Imports": [
-        "assertthat",
-        "Matrix",
-        "methods",
-        "R6",
-        "reticulate (>= 1.17)"
-      ],
-      "Suggests": [
-        "stats",
-        "testthat",
-        "knitr",
-        "rmarkdown"
-      ],
-      "Encoding": "UTF-8",
-      "RoxygenNote": "7.2.3",
-      "Config/reticulate": "list( packages = list( list(package = \"anndata\") ) )",
-      "VignetteBuilder": "knitr",
-      "NeedsCompilation": "no",
-      "Author": "Philipp Angerer [ccp] (<https://orcid.org/0000-0002-0369-2888>, flying-sheep), Alex Wolf [ccp] (<https://orcid.org/0000-0002-8760-7838>, falexwolf), Isaac Virshup [ccp] (ivirshup), Sergei Rybakov [ccp] (Koncopd), Robrecht Cannoodt [aut, cre, cph] (<https://orcid.org/0000-0003-3641-729X>, rcannood)",
-      "Maintainer": "Robrecht Cannoodt <rcannood@gmail.com>",
-      "Repository": "CRAN"
-    },
-    "argparse": {
-      "Package": "argparse",
-      "Version": "2.2.3",
-      "Source": "GitHub",
-      "Type": "Package",
-      "Title": "Command Line Optional and Positional Argument Parser",
-      "Authors@R": "c(person(\"Trevor L\", \"Davis\", role=c(\"aut\", \"cre\"), email=\"trevor.l.davis@gmail.com\", comment = c(ORCID = \"0000-0001-6341-4639\")), person(\"Allen\", \"Day\", role=\"ctb\", comment=\"Some documentation and examples ported from the getopt package.\"), person(\"Python Software Foundation\", role=\"ctb\", comment=\"Some documentation from the argparse Python module.\"), person(\"Paul\", \"Newell\", role=\"ctb\"))",
-      "Description": "A command line parser to be used with 'Rscript' to write \"#!\" shebang scripts that gracefully accept positional and optional arguments and automatically generate usage.",
-      "License": "GPL (>= 2)",
-      "Copyright": "See file (inst/)COPYRIGHTS.",
-      "URL": "https://github.com/trevorld/r-argparse",
-      "BugReports": "https://github.com/trevorld/r-argparse/issues",
-      "LazyLoad": "yes",
-      "Depends": [
-        "R (>= 3.6.0)"
-      ],
-      "Imports": [
-        "findpython",
-        "jsonlite",
-        "R6"
-      ],
-      "SystemRequirements": "python (>= 3.2)",
-      "Suggests": [
-        "knitr (>= 1.15.19)",
-        "rmarkdown",
-        "testthat"
-      ],
-      "VignetteBuilder": "knitr",
-      "RoxygenNote": "7.3.1",
-      "Encoding": "UTF-8",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "r-argparse",
-      "RemoteUsername": "trevorld",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "7e6baca5837050a8a4f57521b63a227d528cdd60",
-      "NeedsCompilation": "no",
-      "Author": "Trevor L Davis [aut, cre] (<https://orcid.org/0000-0001-6341-4639>), Allen Day [ctb] (Some documentation and examples ported from the getopt package.), Python Software Foundation [ctb] (Some documentation from the argparse Python module.), Paul Newell [ctb]",
-      "Maintainer": "Trevor L Davis <trevor.l.davis@gmail.com>"
     },
     "arrow": {
       "Package": "arrow",
@@ -2995,37 +2496,6 @@
       "Maintainer": "Martin Maechler <maechler@stat.math.ethz.ch>",
       "Repository": "CRAN"
     },
-    "blob": {
-      "Package": "blob",
-      "Version": "1.2.4",
-      "Source": "Repository",
-      "Title": "A Simple S3 Class for Representing Vectors of Binary Data ('BLOBS')",
-      "Authors@R": "c( person(\"Hadley\", \"Wickham\", role = \"aut\"), person(\"Kirill\", \"Müller\", , \"kirill@cynkra.com\", role = \"cre\"), person(\"RStudio\", role = c(\"cph\", \"fnd\")) )",
-      "Description": "R's raw vector is useful for storing a single binary object. What if you want to put a vector of them in a data frame? The 'blob' package provides the blob object, a list of raw vectors, suitable for use as a column in data frame.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://blob.tidyverse.org, https://github.com/tidyverse/blob",
-      "BugReports": "https://github.com/tidyverse/blob/issues",
-      "Imports": [
-        "methods",
-        "rlang",
-        "vctrs (>= 0.2.1)"
-      ],
-      "Suggests": [
-        "covr",
-        "crayon",
-        "pillar (>= 1.2.1)",
-        "testthat"
-      ],
-      "Config/autostyle/scope": "line_breaks",
-      "Config/autostyle/strict": "false",
-      "Config/Needs/website": "tidyverse/tidytemplate",
-      "Encoding": "UTF-8",
-      "RoxygenNote": "7.2.3",
-      "NeedsCompilation": "no",
-      "Author": "Hadley Wickham [aut], Kirill Müller [cre], RStudio [cph, fnd]",
-      "Maintainer": "Kirill Müller <kirill@cynkra.com>",
-      "Repository": "CRAN"
-    },
     "bslib": {
       "Package": "bslib",
       "Version": "0.8.0",
@@ -3168,15 +2638,14 @@
       "VignetteBuilder": "knitr",
       "RoxygenNote": "7.1.1",
       "Config/testthat/edition": "3",
+      "Author": "Anthony Cillo [aut, cre] (<https://orcid.org/0000-0002-3213-3129>)",
+      "Maintainer": "Anthony Cillo <arc85@pitt.edu>",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "celltalker",
       "RemoteUsername": "arc85",
       "RemoteRef": "HEAD",
-      "RemoteSha": "6edd610bf558bb1777590f8a6b02711ef7d0fc47",
-      "NeedsCompilation": "no",
-      "Author": "Anthony Cillo [aut, cre] (<https://orcid.org/0000-0002-3213-3129>)",
-      "Maintainer": "Anthony Cillo <arc85@pitt.edu>"
+      "RemoteSha": "6edd610bf558bb1777590f8a6b02711ef7d0fc47"
     },
     "circlize": {
       "Package": "circlize",
@@ -4228,29 +3697,6 @@
       "NeedsCompilation": "yes",
       "Repository": "CRAN",
       "Author": "Douglas Nychka [aut, cre], Reinhard Furrer [aut], John Paige [aut], Stephan Sain [aut], Florian Gerber [aut], Matthew Iverson [aut], Rider Johnson [aut]"
-    },
-    "findpython": {
-      "Package": "findpython",
-      "Version": "1.0.9",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Functions to Find an Acceptable Python Binary",
-      "Authors@R": "c(person(\"Trevor L.\", \"Davis\", role=c(\"aut\", \"cre\"), email=\"trevor.l.davis@gmail.com\", comment = c(ORCID = \"0000-0001-6341-4639\")), person(\"Paul\", \"Gilbert\", role=\"aut\"))",
-      "URL": "https://github.com/trevorld/findpython, https://trevorldavis.com/R/findpython/",
-      "BugReports": "https://github.com/trevorld/findpython/issues",
-      "Description": "Package designed to find an acceptable python binary.",
-      "Suggests": [
-        "reticulate",
-        "testthat"
-      ],
-      "License": "MIT + file LICENSE",
-      "Collate": "'find_python_cmd.r'",
-      "RoxygenNote": "7.3.1",
-      "Encoding": "UTF-8",
-      "NeedsCompilation": "no",
-      "Author": "Trevor L. Davis [aut, cre] (<https://orcid.org/0000-0001-6341-4639>), Paul Gilbert [aut]",
-      "Maintainer": "Trevor L. Davis <trevor.l.davis@gmail.com>",
-      "Repository": "CRAN"
     },
     "fitdistrplus": {
       "Package": "fitdistrplus",
@@ -6987,30 +6433,6 @@
       "Maintainer": "Jeroen Ooms <jeroen@berkeley.edu>",
       "Repository": "CRAN"
     },
-    "org.Hs.eg.db": {
-      "Package": "org.Hs.eg.db",
-      "Version": "3.18.0",
-      "Source": "Bioconductor",
-      "Title": "Genome wide annotation for Human",
-      "Description": "Genome wide annotation for Human, primarily based on mapping using Entrez Gene identifiers.",
-      "Author": "Marc Carlson",
-      "Maintainer": "Bioconductor Package Maintainer <maintainer@bioconductor.org>",
-      "Depends": [
-        "R (>= 2.7.0)",
-        "methods",
-        "AnnotationDbi (>= 1.63.2)"
-      ],
-      "Suggests": [
-        "DBI",
-        "annotate",
-        "RUnit"
-      ],
-      "License": "Artistic-2.0",
-      "organism": "Homo sapiens",
-      "species": "Human",
-      "biocViews": "OrgDb, AnnotationData, Homo_sapiens, humanLLMappings",
-      "NeedsCompilation": "no"
-    },
     "paletteer": {
       "Package": "paletteer",
       "Version": "1.6.0.9000",
@@ -7057,8 +6479,7 @@
       "RemoteRepo": "paletteer",
       "RemoteUsername": "EmilHvitfeldt",
       "RemoteRef": "HEAD",
-      "RemoteSha": "d8db67b68309c0578c2fb7de3ce407254782dc52",
-      "NeedsCompilation": "no"
+      "RemoteSha": "d8db67b68309c0578c2fb7de3ce407254782dc52"
     },
     "parallelly": {
       "Package": "parallelly",
@@ -7270,28 +6691,6 @@
       "NeedsCompilation": "no",
       "Repository": "CRAN"
     },
-    "plogr": {
-      "Package": "plogr",
-      "Version": "0.2.0",
-      "Source": "Repository",
-      "Title": "The 'plog' C++ Logging Library",
-      "Date": "2018-03-24",
-      "Authors@R": "c( person(\"Kirill\", \"Müller\", role = c(\"aut\", \"cre\"), email = \"krlmlr+r@mailbox.org\"), person(\"Sergey\", \"Podobry\", role = \"cph\", comment = \"Author of the bundled plog library\"))",
-      "Description": "A simple header-only logging library for C++. Add 'LinkingTo: plogr' to 'DESCRIPTION', and '#include <plogr.h>' in your C++ modules to use it.",
-      "Suggests": [
-        "Rcpp"
-      ],
-      "License": "MIT + file LICENSE",
-      "Encoding": "UTF-8",
-      "LazyData": "true",
-      "URL": "https://github.com/krlmlr/plogr#readme",
-      "BugReports": "https://github.com/krlmlr/plogr/issues",
-      "RoxygenNote": "6.0.1.9000",
-      "NeedsCompilation": "no",
-      "Author": "Kirill Müller [aut, cre], Sergey Podobry [cph] (Author of the bundled plog library)",
-      "Maintainer": "Kirill Müller <krlmlr+r@mailbox.org>",
-      "Repository": "CRAN"
-    },
     "plotly": {
       "Package": "plotly",
       "Version": "4.10.4",
@@ -7442,60 +6841,6 @@
       "NeedsCompilation": "yes",
       "Author": "Angus Johnson [aut] (C++ original, http://www.angusj.com/delphi/clipper.php), Adrian Baddeley [aut, trl, cre], Kurt Hornik [ctb], Brian D. Ripley [ctb], Elliott Sales de Andrade [ctb], Paul Murrell [ctb], Ege Rubak [ctb], Mark Padgham [ctb]",
       "Repository": "CRAN"
-    },
-    "presto": {
-      "Package": "presto",
-      "Version": "1.0.0",
-      "Source": "GitHub",
-      "Title": "Fast Functions for Differential Expression using Wilcox and AUC",
-      "Authors@R": "c( person(\"Ilya\", \"Korsunsky\", email = \"ilya.korsunsky@gmail.com\",  role = c(\"aut\"), comment = c(ORCID = \"0000-0003-4848-3948\")), person(\"Aparna\", \"Nathan\",  role = \"aut\"), person(\"Nghia\", \"Millard\",  role = \"aut\", comment = c(ORCID = \"0000-0002-0518-7674\")), person(\"Soumya\", \"Raychaudhuri\",  role = c(\"aut\"), comment = c(ORCID = \"0000-0002-1901-8265\")), person(\"Kamil\", \"Slowikowski\", email = \"kslowikowski@gmail.com\", role = c(\"cre\", \"ctb\"), comment = c(ORCID = \"0000-0002-2843-6370\")), person(\"Austin\", \"Hartman\", role = c(\"ctb\"), comment = c(ORCID = \"0000-0001-7278-1852\")) )",
-      "Description": "Scalable implementation of the Wilcoxon rank sum test and auROC statistic. Interfaces to dense and sparse matrices, as well as genomics analysis frameworks Seurat and SingleCellExperiment.",
-      "License": "GPL-3",
-      "LazyData": "true",
-      "Encoding": "UTF-8",
-      "Depends": [
-        "R (>= 3.4.0)",
-        "Rcpp",
-        "data.table"
-      ],
-      "LinkingTo": [
-        "Rcpp",
-        "RcppArmadillo"
-      ],
-      "biocViews": "",
-      "Imports": [
-        "dplyr",
-        "methods",
-        "tidyr",
-        "purrr",
-        "tibble",
-        "Matrix",
-        "rlang",
-        "stats",
-        "utils"
-      ],
-      "RoxygenNote": "7.2.1",
-      "Suggests": [
-        "knitr",
-        "rmarkdown",
-        "testthat",
-        "Seurat",
-        "SingleCellExperiment",
-        "SummarizedExperiment",
-        "broom",
-        "BiocStyle",
-        "DESeq2"
-      ],
-      "NeedsCompilation": "yes",
-      "VignetteBuilder": "knitr",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "presto",
-      "RemoteUsername": "immunogenomics",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "7636b3d0465c468c35853f82f1717d3a64b3c8f6",
-      "Author": "Ilya Korsunsky [aut] (<https://orcid.org/0000-0003-4848-3948>), Aparna Nathan [aut], Nghia Millard [aut] (<https://orcid.org/0000-0002-0518-7674>), Soumya Raychaudhuri [aut] (<https://orcid.org/0000-0002-1901-8265>), Kamil Slowikowski [cre, ctb] (<https://orcid.org/0000-0002-2843-6370>), Austin Hartman [ctb] (<https://orcid.org/0000-0001-7278-1852>)",
-      "Maintainer": "Kamil Slowikowski <kslowikowski@gmail.com>"
     },
     "prismatic": {
       "Package": "prismatic",
@@ -8192,37 +7537,6 @@
       "Author": "Kevin Ushey [aut, cre], JJ Allaire [aut], Hadley Wickham [aut], Gary Ritchie [aut], RStudio [cph]",
       "Repository": "CRAN"
     },
-    "rsvd": {
-      "Package": "rsvd",
-      "Version": "1.0.5",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Randomized Singular Value Decomposition",
-      "Date": "2021-04-11",
-      "Authors@R": "c(person(\"N. Benjamin\", \"Erichson\", role = c(\"aut\", \"cre\"), email = \"erichson@berkeley.edu\"))",
-      "Author": "N. Benjamin Erichson [aut, cre]",
-      "Maintainer": "N. Benjamin Erichson <erichson@berkeley.edu>",
-      "Description": "Low-rank matrix decompositions are fundamental tools and widely used for data analysis, dimension reduction, and data compression. Classically, highly accurate  deterministic matrix algorithms are used for this task. However, the emergence of  large-scale data has severely challenged our computational ability to analyze big data.  The concept of randomness has been demonstrated as an effective strategy to quickly produce approximate answers to familiar problems such as the singular value decomposition (SVD).  The rsvd package provides several randomized matrix algorithms such as the randomized  singular value decomposition (rsvd), randomized principal component analysis (rpca),  randomized robust principal component analysis (rrpca), randomized interpolative  decomposition (rid), and the randomized CUR decomposition (rcur). In addition several plot  functions are provided.",
-      "Depends": [
-        "R (>= 4.0.0)"
-      ],
-      "Imports": [
-        "Matrix"
-      ],
-      "License": "GPL (>= 3)",
-      "LazyData": "TRUE",
-      "LazyDataCompression": "xz",
-      "URL": "https://github.com/erichson/rSVD",
-      "BugReports": "https://github.com/erichson/rSVD/issues",
-      "Suggests": [
-        "ggplot2",
-        "testthat"
-      ],
-      "RoxygenNote": "7.1.1",
-      "NeedsCompilation": "no",
-      "Encoding": "UTF-8",
-      "Repository": "CRAN"
-    },
     "sass": {
       "Package": "sass",
       "Version": "0.4.9",
@@ -8467,15 +7781,14 @@
       "SystemRequirements": "anndata, loompy",
       "License": "GPL-3",
       "LazyDate": "true",
+      "Author": "Vladimir Kiselev [cre], Ni Huang [aut]",
+      "Maintainer": "Vladimir Kiselev <wikiselev@users.noreply.github.com>",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "sceasy",
       "RemoteUsername": "cellgeni",
       "RemoteRef": "HEAD",
-      "RemoteSha": "c1c0bf973b0b3b67e013c01bf583d1fcc4c9f8cc",
-      "NeedsCompilation": "no",
-      "Author": "Vladimir Kiselev [cre], Ni Huang [aut]",
-      "Maintainer": "Vladimir Kiselev <wikiselev@users.noreply.github.com>"
+      "RemoteSha": "c1c0bf973b0b3b67e013c01bf583d1fcc4c9f8cc"
     },
     "sctransform": {
       "Package": "sctransform",
@@ -8595,14 +7908,13 @@
       "URL": "https://ludvigla.github.io/semla/",
       "Config/testthat/edition": "3",
       "Language": "en-US",
+      "Author": "Ludvig Larsson [aut, cre] (<https://orcid.org/0000-0003-4209-2911>), Lovisa Franzen [aut] (<https://orcid.org/0000-0003-3755-718X>), Javier Escudero Morlanes [aut] (<https://orcid.org/0009-0004-2885-2456>), Spatial Research [fnd]",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "semla",
       "RemoteUsername": "ludvigla",
       "RemoteRef": "HEAD",
-      "RemoteSha": "d2dc689b08518e6c04ed812a7fa1827f283efd6d",
-      "NeedsCompilation": "no",
-      "Author": "Ludvig Larsson [aut, cre] (<https://orcid.org/0000-0003-4209-2911>), Lovisa Franzen [aut] (<https://orcid.org/0000-0003-3755-718X>), Javier Escudero Morlanes [aut] (<https://orcid.org/0009-0004-2885-2456>), Spatial Research [fnd]"
+      "RemoteSha": "d2dc689b08518e6c04ed812a7fa1827f283efd6d"
     },
     "shape": {
       "Package": "shape",
@@ -8747,16 +8059,16 @@
       "VignetteBuilder": "knitr",
       "License": "CCO",
       "Encoding": "UTF-8",
+      "LazyData": "true",
       "RoxygenNote": "6.1.1",
+      "Author": "Anthony Cillo [aut, cre] (<https://orcid.org/0000-0002-3213-3129>)",
+      "Maintainer": "Anthony Cillo <arc85@pitt.edu>",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "singleseqgset",
       "RemoteUsername": "arc85",
       "RemoteRef": "HEAD",
-      "RemoteSha": "3e3d9f099e6af33ca3329a477544bcabbadca347",
-      "NeedsCompilation": "no",
-      "Author": "Anthony Cillo [aut, cre] (<https://orcid.org/0000-0002-3213-3129>)",
-      "Maintainer": "Anthony Cillo <arc85@pitt.edu>"
+      "RemoteSha": "3e3d9f099e6af33ca3329a477544bcabbadca347"
     },
     "singlet": {
       "Package": "singlet",
@@ -8771,7 +8083,6 @@
       "Description": "Fast NMF with automatic rank-determination for dimension reduction of single-cell data using Seurat, RcppML nmf, SingleCellExperiments and similar.",
       "License": "GPL (>= 2)",
       "Depends": [
-        "R (>= 3.5.0)",
         "Seurat",
         "RcppML",
         "dplyr"
@@ -8815,8 +8126,7 @@
       "RemoteRepo": "singlet",
       "RemoteUsername": "zdebruine",
       "RemoteRef": "8ab019d",
-      "RemoteSha": "8ab019d634efbf5d3a2fa0b5b78e62b2984d42ee",
-      "NeedsCompilation": "yes"
+      "RemoteSha": "8ab019d634efbf5d3a2fa0b5b78e62b2984d42ee"
     },
     "sitmo": {
       "Package": "sitmo",

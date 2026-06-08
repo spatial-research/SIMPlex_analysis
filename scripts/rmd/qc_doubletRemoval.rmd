@@ -21,7 +21,7 @@ set.seed(1)
 ```
 
 ## Load libraries
-PLEASE LOAD SEURAT4 ENVIRONMENT FOR DOUBLETFINDER TO WORK
+Use the `simplex` conda env (`conda activate simplex`); DoubletFinder >= 2.0.6 is pinned in `renv.lock` and works with Seurat v5.
 ```{r package, message='hide',warning='hide',results='hold'}
 suppressMessages(require(Seurat))
 suppressMessages(require(Matrix))
@@ -206,7 +206,7 @@ data_list <- lapply(datasets, function(x) {
   subset <- spl.filt[, spl.filt@meta.data$sample_id == x]
 
   # Run parameter optimization with paramSweep
-  sweep.res <- paramSweep_v3(subset, PCs = 1:30, sct = TRUE)
+  sweep.res <- paramSweep(subset, PCs = 1:30, sct = TRUE)
 
   sweep.stats <- summarizeSweep(sweep.res, GT = FALSE)
   bcmvn <- find.pK(sweep.stats)
@@ -214,7 +214,7 @@ data_list <- lapply(datasets, function(x) {
   barplot(bcmvn$BCmetric, names.arg = bcmvn$pK, las=2, main = paste0(x, " barchart_before_doublets_removal"))
   dev.off()
   pK <- bcmvn$pK[which.max(bcmvn$BCmetric)]
-  BC_pK <- as.numeric(as.character(pK[[1]])) #note: use a single numeric value as pK parameter in the doubletFinder_v3()
+  BC_pK <- as.numeric(as.character(pK[[1]])) # use a single numeric value as pK parameter in doubletFinder()
 
   pdf(paste0(wd, "pK_estimation_optimized_individual_datasets_prefiltered_adjusted_", x, "_pK.pdf"), width = 10, height = 10)
   print(ggplot(bcmvn, aes(pK, BCmetric, group = 1)) + geom_point() + geom_line())
@@ -222,12 +222,7 @@ data_list <- lapply(datasets, function(x) {
 
   # define the expected number of doublet cellscells.
   nExp <- round(ncol(subset) * 0.08) # expect 8% doublets
-  subset <- doubletFinder_v3(subset, pN = 0.25, pK = BC_pK, nExp = nExp, PCs = 1:30, sct = TRUE)
-
-  subset@meta.data$pANN <- subset@meta.data[, length(colnames(subset@meta.data)) - 1]
-  subset@meta.data[, length(colnames(subset@meta.data)) - 2] <- NULL
-  subset@meta.data$DF.classifications <- subset@meta.data[, length(colnames(subset@meta.data)) - 1]
-  subset@meta.data[, length(colnames(subset@meta.data)) - 2] <- NULL
+  subset <- doubletFinder(subset, pN = 0.25, pK = BC_pK, nExp = nExp, PCs = 1:30, sct = TRUE)
 
   return(subset)
 })
@@ -247,8 +242,10 @@ spl.doub <- data_list[[1]]
 
 ## Doublet removal
 ```{r filter.doublets}
-colnames(spl.doub@meta.data)
-spl.filt_noDoublets <-  spl.doub[, spl.doub@meta.data[, "DF.classifications"] == "Singlet"]
+df_col <- grep("^DF\\.classifications", colnames(spl.doub@meta.data), value = TRUE)
+stopifnot(length(df_col) == 1L)
+table(spl.doub@meta.data[[df_col]])
+spl.filt_noDoublets <- spl.doub[, spl.doub@meta.data[[df_col]] == "Singlet"]
 ```
 
 ```{r}

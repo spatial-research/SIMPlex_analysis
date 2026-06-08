@@ -122,10 +122,10 @@ Creates the `simplex` conda env (from [`environment/environment.yml`](environmen
 | File | Role |
 |------|------|
 | `environment/environment.yml` | Conda: R 4.3.3, system libraries, Jupyter |
-| `environment/renv.lock` | Pinned CRAN / Bioconductor / GitHub R packages |
+| `environment/renv.lock` | Pinned CRAN / Bioconductor / GitHub R packages (Seurat v5, DoubletFinder >= 2.0.6, …) |
 | `environment/setup.sh` | Single entry point for install + restore |
 
-**Other envs:** `qc_doubletRemoval.rmd` needs Seurat v4 + DoubletFinder (not in `renv.lock`). CellBender v0.3: [`environment/cellbender.yml`](environment/cellbender.yml).
+**Other envs:** CellBender v0.3 only — [`environment/cellbender.yml`](environment/cellbender.yml). All R analysis scripts (including doublet removal) use the `simplex` env with Seurat v5 and DoubletFinder >= 2.0.6 from [`environment/renv.lock`](environment/renv.lock).
 
 ### 3. Configure paths
 
@@ -151,7 +151,7 @@ Run chunk-by-chunk. Recommended order:
 
 | # | Script | Environment |
 |---|--------|-------------|
-| 1 | `scripts/rmd/qc_doubletRemoval.rmd` | Seurat v4 + DoubletFinder (separate env) |
+| 1 | `scripts/rmd/qc_doubletRemoval.rmd` | `simplex` |
 | 2 | `scripts/rmd/breast_cancer/annotation_majorLevel.rmd` | `simplex` |
 | 3 | `scripts/rmd/breast_cancer/analysis_majorLevel.rmd` | `simplex` |
 | 4 | `scripts/rmd/breast_cancer/analysis_cellStateLevel.rmd` | `simplex` |

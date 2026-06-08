@@ -127,7 +127,7 @@ if (!kernel_only) {
     }
   }
 
-  for (p in c("here", "Seurat", "semla")) {
+  for (p in c("here", "Seurat", "DoubletFinder", "semla")) {
     if (!requireNamespace(p, quietly = TRUE)) stop("Missing package: ", p, call. = FALSE)
   }
   source("config.R")

@@ -48,9 +48,18 @@ No changes to local `data/raw_data/` are required before submission; sequence fi
 - Location: `data/other/external_references/CAF_Cords2023/BREAST_fibro_tumour.rds`
 - Used by: `analysis_cellStateLevel.rmd`
 
-### snPATHO-seq FFPE breast reference — Wang et al. 2024
-- Location: `data/other/external_references/snPATHO/4066_snPatho.rds`
-- Used by: `analysis_majorLevel.rmd` (Extended Data Fig. 2)
+### snPATHO-seq breast reference — Wang et al. 2024
+- Location: `data/other/external_references/snPATHO/`
+  - `4066_integrated_seuarat_object.rds`
+  - `4399_integrated_seuarat_object.rds`
+  - `4411_integrated_seuarat_object.rds`
+- Samples (`sample_id` in object metadata):
+  - **4066:** `4066FFPE`, `4066SNAPFix`, `4066GEX`
+  - **4399:** `4399FFPE_run1`, `4399SNAPFix`, `4399GEX`
+  - **4411:** `4411FFPE`, `4411SNAPFix`, `4411GEX`
+- Used by:
+  - `analysis_majorLevel.rmd` (Extended Data Fig. 2; loads `4066_integrated_seuarat_object.rds` and subsets `4066FFPE` as `snPatho_FFPE`)
+  - `scripts/jupyter/technical/metrics_comparison.ipynb` (FFPE samples only: `4066FFPE`, `4399FFPE_run1`, `4411FFPE`; labelled `snPatho_<sample_id>`)
 
 ### Mouse brain atlas — Zeisel et al. 2018
 - Download: http://mousebrain.org/adolescent/ (SRP135960)
@@ -81,7 +90,6 @@ No changes to local `data/raw_data/` are required before submission; sequence fi
 - CellRanger v7.1.0 — GRCh38 2020-A + Human/Mouse Transcriptome Probe Sets v1.0.1
 - SpaceRanger (Visium CytAssist + Visium HD)
 - CellBender v0.3+ — separate conda env: [`environment/cellbender.yml`](../environment/cellbender.yml)
-- **R analysis environment** — R 4.3.3, Seurat v5.x, semla, harmony, singlet, … pinned in [`environment/renv.lock`](../environment/renv.lock); conda system libraries in [`environment/environment.yml`](../environment/environment.yml). One-step install: `bash environment/setup.sh`
-- Seurat v4 + DoubletFinder v2.0.3 — `scripts/rmd/qc_doubletRemoval.rmd` only (separate env; not in `renv.lock`)
+- **R analysis environment** — R 4.3.3, Seurat v5.x, DoubletFinder >= 2.0.6, semla, harmony, singlet, … pinned in [`environment/renv.lock`](../environment/renv.lock); conda system libraries in [`environment/environment.yml`](../environment/environment.yml). One-step install: `bash environment/setup.sh`
 - QuPath v5.0.1 (CTA generation)
 - Scanpy v1.9 — Xenium annotation (Python; outside this R repo)
