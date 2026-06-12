@@ -55,7 +55,7 @@ data/
 │   │   │   # HD section nuclei: visHD_BC_rep1, visHD_BC_rep2 (multiplex → patient4 + patient5)
 │   │   ├── mouse_brain/                   # MOB_Chromium, sn_sample_1/2
 │   │   ├── prostate_cancer/               # prostate_AP5_P2 (multiplex → pt10 + pt20)
-│   │   └── technical_experiments/         # SIMPlex_Rev001
+│   │   └── technical_experiments/         # SIMPlex_Rev001 (raw FASTQs; samples → patient6_technical, patient4_technical_3sections)
 │   └── spatial/
 │       ├── breast_cancer/
 │       │   ├── 55um/
@@ -74,7 +74,7 @@ data/
 │   │   │   └── HD/                        # patient4, patient5
 │   │   ├── mouse_brain/                   # sn_MOB_chromium_flex, sn_sample_1, sn_sample_2
 │   │   ├── prostate_cancer/               # pt10, pt20
-│   │   └── technical_experiments/         # outs_SIMPlex_Rev001_Tube1, Tube2
+│   │   └── technical_experiments/         # patient6_technical, patient4_technical_3sections
 │   ├── cellbender/
 │   │   ├── breast_cancer/55um/            # same patient layout as cellranger/55um
 │   │   ├── breast_cancer/HD/              # patient4 (patient4_1/2), patient5
