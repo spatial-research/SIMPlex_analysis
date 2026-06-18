@@ -1,0 +1,6 @@
+Cluster stability validation (scclusteval; Tang et al., Bioinformatics 2020)
+
+For each lineage (CAFs, epithelial, immune), we subsampled 80% of nuclei in 20 iterations, re-clustered after lineage-specific preprocessing (NormalizeData on RNA counts, HVG, scaling, PCA, Harmony on patient_ID), and computed Jaccard similarity between each subpopulation and its best-matching subsample cluster.
+
+26/52 subpopulations had median Jaccard >= 0.6 (stable).
+6/52 subpopulations had median Jaccard >= 0.85 (highly stable).
