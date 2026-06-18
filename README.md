@@ -117,13 +117,16 @@ bash environment/setup.sh
 conda activate simplex
 ```
 
-Creates the `simplex` conda env (from [`environment/environment.yml`](environment/environment.yml)), restores R packages from [`environment/renv.lock`](environment/renv.lock) into `environment/renv/library/`, writes `.Rprofile`, and registers the Jupyter kernel **R (simplex renv)**. First run can take 30–60+ minutes.
+Creates the `simplex` conda env (from [`environment/environment.yml`](environment/environment.yml)), installs **SpaGE** at a pinned git commit, restores R packages from [`environment/renv.lock`](environment/renv.lock) into `environment/renv/library/`, writes `.Rprofile`, and registers the Jupyter kernel **R (simplex renv)**. First run can take 30–60+ minutes.
 
 | File | Role |
 |------|------|
-| `environment/environment.yml` | Conda: R 4.3.3, system libraries, Jupyter |
+| `environment/environment.yml` | Conda: R 4.3.3, Python 3.12, numpy/pandas/scipy/scikit-learn, system libraries |
 | `environment/renv.lock` | Pinned CRAN / Bioconductor / GitHub R packages (Seurat v5, DoubletFinder >= 2.0.6, …) |
+| `environment/spage.lock.json` | Pinned SpaGE git commit ([tabdelaal/SpaGE](https://github.com/tabdelaal/SpaGE)) for spatial gene imputation |
 | `environment/setup.sh` | Single entry point for install + restore |
+
+See [`environment/README.md`](environment/README.md) for the full environment layout.
 
 **Other envs:** CellBender v0.3 only — [`environment/cellbender.yml`](environment/cellbender.yml). All R analysis scripts (including doublet removal) use the `simplex` env with Seurat v5 and DoubletFinder >= 2.0.6 from [`environment/renv.lock`](environment/renv.lock).
 

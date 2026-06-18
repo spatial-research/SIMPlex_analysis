@@ -21,6 +21,10 @@ fi
 
 conda activate simplex
 echo "Using R: $(which R) ($(R --version | head -1))"
+echo "Using Python: $(which python) ($(python --version 2>&1))"
+
+echo "Installing SpaGE (pinned in environment/spage.lock.json) ..."
+bash "$REPO_ROOT/environment/install_spage.sh"
 
 unset RENV_PATHS_PREFIX RENV_PATHS_LIBRARY RENV_PATHS_LIBRARY_ROOT
 env -u RENV_PATHS_PREFIX -u RENV_PATHS_LIBRARY -u RENV_PATHS_LIBRARY_ROOT \
@@ -162,3 +166,4 @@ RSCRIPT
 echo ""
 echo "Done.  conda activate simplex"
 echo "       Open this repo in R / Jupyter (kernel: R (simplex renv))"
+echo "       SpaGE: python -c \"from SpaGE.main import SpaGE\""

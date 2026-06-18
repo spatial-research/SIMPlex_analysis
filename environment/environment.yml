@@ -1,4 +1,6 @@
-# Conda: R + system libraries. R packages: environment/renv.lock (bash environment/setup.sh)
+# Conda: R + system libraries. R packages: environment/renv.lock
+# SpaGE (spatial imputation): environment/spage.lock.json + environment/install_spage.sh
+# Full stack: bash environment/setup.sh
 name: simplex
 channels:
   - conda-forge
@@ -10,6 +12,11 @@ dependencies:
   - pyarrow=18.1
   - python=3.12
   - pip
+  - git
+  - numpy=1.26.4
+  - pandas=2.2.2
+  - scipy=1.13.0
+  - scikit-learn=1.5.0
   - compilers
   - cmake
   - make

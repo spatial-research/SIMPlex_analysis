@@ -45,6 +45,9 @@ environment/renv/cellar/
 *~
 *.swp
 
+# ---- Python vendors ---------------------------------------------------------
+environment/vendor/
+
 # ---- Python / notebook artifacts --------------------------------------------
 __pycache__/
 *.pyc

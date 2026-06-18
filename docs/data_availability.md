@@ -2,7 +2,7 @@
 
 Mirrors the manuscript "Code and Data availability" section. Use alongside [`data/README.md`](../data/README.md) to verify your local copy.
 
-**Reproduce the analysis environment:** `bash environment/setup.sh` then `conda activate simplex` (see [README](../README.md#2-install-environment)).
+**Reproduce the analysis environment:** `bash environment/setup.sh` then `conda activate simplex` (see [README](../README.md#2-install-environment)). This installs R packages from `environment/renv.lock` and SpaGE (spatial gene imputation) from `environment/spage.lock.json`; details in [`environment/README.md`](../environment/README.md).
 
 ## Deposited processed data
 

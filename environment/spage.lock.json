@@ -1,0 +1,10 @@
+{
+  "SpaGE": {
+    "repository": "https://github.com/tabdelaal/SpaGE.git",
+    "commit": "edd0fb7086eca791c6589020893eb4f034b195c7",
+    "commit_short": "edd0fb7",
+    "commit_message": "Speeding_up SpaGE",
+    "package_version": "1.0.0",
+    "reference": "Abdelaal T. et al. SpaGE: Spatial Gene Enhancement using scRNA-seq. NAR 2020."
+  }
+}
