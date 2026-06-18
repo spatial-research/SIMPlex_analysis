@@ -46,4 +46,6 @@ Restored from `renv.lock` into `environment/renv/library/` on first `setup.sh` r
 
 ## Jupyter
 
-Kernel name: **R (simplex renv)** (`simplex-renv`). R notebooks under `scripts/jupyter/` use this kernel. Python cells in mixed notebooks use the `simplex` conda Python (including SpaGE when imported explicitly).
+Kernel name: **R (simplex renv)** (`simplex-renv`). All R notebooks under `scripts/jupyter/` use this kernel.
+
+`scripts/jupyter/breast_cancer/spaGE.ipynb` uses the **`simplex` conda Python** (SpaGE + scientific stack from `environment.yml`). Select the Python 3 kernel tied to the `simplex` env, or run cells after `conda activate simplex`.

@@ -1,16 +1,16 @@
 # `data/` — SIMPlex data
 
-Four **top-level** areas. **`raw_data/` is separate** from the processed trees (`single_nuclei/`, `spatial/`): scripts never read raw files (no `RAW_ROOT` in `config.R`). Analysis uses CellRanger, CellBender, SpaceRanger outputs and deposited `.rds` objects only.
+Four **top-level** areas. **`raw_data/` is separate** from the processed trees (`single_nuclei/`, `spatial/`): notebooks never read raw files (no `RAW_ROOT` in `config.R`). Analysis uses CellRanger, CellBender, SpaceRanger outputs and deposited `.rds` objects only.
 
 | Folder | Role | Submission |
 |--------|------|------------|
-| `raw_data/` | FASTQs and microscopy (local curation layout) | **Separate** sequence-data deposit (not bundled with processed data) |
+| `raw_data/` | FASTQs and microscopy (local curation layout) | **Separate** sequence-data deposit (complete; not bundled with processed data) |
 | `single_nuclei/` | Processed snRNA: CellRanger → CellBender → Seurat objects | Main processed deposit |
 | `spatial/` | Processed spatial: SpaceRanger, Xenium, Visium Seurat objects | Main processed deposit |
 | `other/` | CTA, histopathology, public reference atlases | Main processed deposit |
 
 - **Processed data (figures / re-run from matrices):** KTH Data Repository, DOI [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40). Unpack `single_nuclei/`, `spatial/`, and `other/` into `data/`. Install the R environment first: [`../README.md`](../README.md#2-install-environment).
-- **Raw sequencing data:** deposited **separately** upon publication (same folder layout as `raw_data/` below; link from the KTH record). A local `raw_data/` copy may exist during curation but is not required to run the analysis scripts.
+- **Raw sequencing data:** deposited **separately** from the processed archive (same folder layout as `raw_data/` below; linked from the KTH record). Not required to run the analysis notebooks.
 - **Tracking:** directory structure and `.md` files are git-tracked; data files are gitignored. The KTH deposit is the canonical complete copy.
 - **IDs:** breast cancer `patient1`–`patient10`; prostate `pt10` / `pt20`; mouse brain `A` / `B`. No source institution IDs or dates in paths or filenames.
 - **`55um` = standard Visium** (55 µm spot pitch), not section thickness. Contrast with `HD` (Visium HD, 2 µm bins). Fresh-frozen breast (patient10) is standard Visium → under `55um/`.
@@ -48,7 +48,7 @@ Subtype metadata: [`../resources/sample_metadata.csv`](../resources/sample_metad
 ```
 data/
 │
-├── raw_data/                              # NOT read by analysis scripts
+├── raw_data/                              # NOT read by analysis notebooks
 │   ├── single_nuclei/
 │   │   ├── breast_cancer/                 # all snRNA FASTQs flat (pool-level *.fastq.gz)
 │   │   │   # 55 µm: snrna_pool1–3, SIMPlex_FFPE, SIMPlex_BC1, …
@@ -61,9 +61,9 @@ data/
 │       │   ├── 55um/
 │       │   │   ├── patient1 … patient9/   # fastqs/, images/, manual_alignment/
 │       │   │   └── patient10/
-│       │   │       ├── patient10_1/
-│       │   │       └── patient10_2/     # H&E/CytAssist source TIFFs pending
-│       │   └── HD/                        # placeholder (breast HD raw FASTQs pending)
+│       │   │       ├── patient10_1/     # fastqs/, images/ (H&E + CytAssist TIFFs)
+│       │   │       └── patient10_2/
+│       │   └── HD/                        # patient4, patient5 — fastqs/, images/, manual_alignment/
 │       ├── mouse_brain/{A,B}/             # fastqs/, images/, manual_alignment/
 │       └── prostate_cancer/{pt10,pt20}/   # fastqs/, images/
 │
@@ -99,7 +99,7 @@ data/
 │   │   ├── breast_cancer/HD/{patient4_HD,patient5_HD}/   # *_spatial.rds, *_major_map.csv
 │   │   ├── breast_cancer/spatial_bc_FreshFixed_filtered.rds   # patient10 Visium (2 sections)
 │   │   └── prostate_cancer/{pt10_visHD.rds, pt20_visHD.rds}
-│   │   # per-sample 55 µm RDS: spatial/r_objects/breast_cancer/55um/<sample>/  (script output)
+│   │   # per-sample 55 µm RDS: spatial/r_objects/breast_cancer/55um/<sample>/  (notebook output)
 │   └── xenium/breast_cancer/{patient4,patient5}/
 │
 └── other/                                 # OTHER_ROOT in config.R
@@ -110,20 +110,22 @@ data/
 
 ---
 
-## What scripts read
+## What notebooks read
 
 Paths come from [`../config.R`](../config.R): `CELLRANGER`, `CELLBENDER`, `SN_RDS`, `SPACERANGER`, `SPATIAL_RDS`, `XENIUM`, `CTA_DIR`, `HISTO_DIR`, `EXT_REFS`. None point at `raw_data/`.
 
 | Layer | Typical files | Used by |
 |-------|---------------|---------|
-| `single_nuclei/cellbender/…/*_cellbender_filtered.h5` | Denoised count matrix | `qc_doubletRemoval.rmd`, `mouse_brain/sn_analysis.Rmd` |
+| `single_nuclei/cellbender/…/*_cellbender_filtered.h5` | Denoised count matrix | `qc_doubletRemoval.ipynb`, `mouse_brain/sn_analysis.ipynb` |
 | `single_nuclei/cellranger/…/count/*.h5` | CellRanger matrices | QC (optional), pipeline input to CellBender |
-| `single_nuclei/r_objects/…/*.rds` | Annotated snRNA | Breast / prostate / mouse analysis Rmds |
-| `spatial/spaceranger/…` | `filtered_feature_bc_matrix.h5`, `spatial/`, HD `binned_outputs/` | Spatial analysis Rmds |
+| `single_nuclei/r_objects/…/*.rds` | Annotated snRNA | Breast / prostate / mouse analysis notebooks |
+| `spatial/spaceranger/…` | `filtered_feature_bc_matrix.h5`, `spatial/`, HD `binned_outputs/` | Spatial analysis notebooks, `spaGE.ipynb` |
 | `spatial/r_objects/…/*.rds` | Visium Seurat + deconvolution maps | Breast / prostate analysis |
-| `spatial/xenium/…` | Xenium Analyzer output | `analysis_cellStateLevel.rmd` |
-| `other/CTA/`, `other/histpathology_visium/` | Per-patient CSVs | `analysis_majorLevel.rmd` |
+| `spatial/xenium/…` | Xenium Analyzer output | `analysis_cellStateLevel.ipynb` |
+| `other/CTA/`, `other/histpathology_visium/` | Per-patient CSVs | `analysis_majorLevel.ipynb` |
 | `other/external_references/` | Public atlases | See [`../docs/data_availability.md`](../docs/data_availability.md) |
+
+**Git-tracked metadata** in [`../resources/`](../resources/): `sample_metadata.csv`, `cellbender_summary.csv` (CellBender metrics for technical experiments), `pat4_celltalker_interactions.csv` (CellTalker output for patient 4 niche analysis).
 
 ---
 
@@ -163,10 +165,11 @@ Prostate: `prostate_AP5_P2` → `pt10`, `pt20`. Barcode provenance: `remove_befo
 
 | Item | Status |
 |------|--------|
-| Processed snRNA + spatial (CellRanger, CellBender, SpaceRanger, objects, Xenium) | Ready for submission; barcode-verified vs manuscript `.rds` |
-| Main KTH deposit (`single_nuclei/`, `spatial/`, `other/`, `figs/`) | Processed layers + objects (scripts do not need raw FASTQs) |
-| Raw sequencing (`raw_data/`) | **Separate deposit** upon publication |
-| Raw snRNA HD breast (`visHD_BC_rep*`) | **Present** (flat in `breast_cancer/`; multiplex patient4 + patient5) |
-| Raw spatial HD breast (`raw_data/spatial/breast_cancer/HD/`) | **Pending** (Visium HD spatial FASTQs; not the same as HD snRNA above) |
-| patient10 H&E / CytAssist source TIFFs | Pending (collaborator copy; sequence or image deposit as applicable) |
-| Per-sample `spatial/r_objects/breast_cancer/55um/<sample>/` | Generated when running analysis scripts |
+| Processed snRNA + spatial (CellRanger, CellBender, SpaceRanger, objects, Xenium) | Complete; barcode-verified vs manuscript `.rds` |
+| Main KTH deposit (`single_nuclei/`, `spatial/`, `other/`, `figs/`) | Complete |
+| Analysis notebooks | All manuscript and supplementary notebooks finalized |
+| Raw sequencing (`raw_data/`) | Complete — separate public deposit (linked from KTH record) |
+| Raw snRNA HD breast (`visHD_BC_rep*`) | Complete (flat in `breast_cancer/`; multiplex patient4 + patient5) |
+| Raw spatial HD breast (`raw_data/spatial/breast_cancer/HD/`) | Complete (Visium HD spatial FASTQs for patients 4 and 5) |
+| patient10 H&E / CytAssist source TIFFs | Complete (`raw_data/spatial/breast_cancer/55um/patient10/patient10_{1,2}/images/`) |
+| Per-sample `spatial/r_objects/breast_cancer/55um/<sample>/` | Generated when running analysis notebooks |
