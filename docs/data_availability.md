@@ -61,9 +61,13 @@ Raw FASTQs and source microscopy are **not** bundled in the main KTH processed a
   - `scripts/jupyter/technical/metrics_comparison.ipynb` (FFPE samples only: `4066FFPE`, `4399FFPE_run1`, `4411FFPE`; labelled `snPatho_<sample_id>`)
 
 ### Mouse brain atlas — Zeisel et al. 2018
-- Download: http://mousebrain.org/adolescent/ (SRP135960)
-- Location: `data/other/external_references/mouse_brain_atlas/l5_all.loom`
-- Used by: `mouse_brain/sn_analysis.ipynb`
+> Zeisel A *et al.* adolescent mouse brain scRNA-seq (Linnarsson lab).
+
+- **Download:** [mousebrain.org/adolescent](http://mousebrain.org/adolescent/) (GEO [SRP135960](https://www.ncbi.nlm.nih.gov/sra/?term=SRP135960)) — file **`l5_all.loom`** (~18 GB)
+- **Not in the KTH deposit** — fetch manually and place at:
+  `data/other/external_references/mouse_brain_atlas/l5_all.loom`
+- **`l5_all.agg.loom` is not used** by this repo (aggregated cluster-level file; optional).
+- Used by: `mouse_brain/sn_analysis.ipynb` (Zeisel label transfer via `loom::connect` → Seurat)
 
 ### Allen Mouse Cortex — Tasic et al. 2016
 - Download: https://portal.brain-map.org/atlases-and-data/rnaseq/mouse-whole-cortex-and-hippocampus-10x

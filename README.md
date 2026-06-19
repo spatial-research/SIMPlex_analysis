@@ -150,7 +150,11 @@ HDF5_LIB  <- "/path/to/libhdf5_hl.so.200"   # or NULL to skip
 
 ### 4. Populate `data/` and `figs/`
 
-After cloning, download the **processed** archive from the [KTH Data Repository](https://datarepository.kth.se/records/jg1wh-kza40) and unpack `data/single_nuclei/`, `data/spatial/`, `data/other/`, and `figs/` into the repo root. That is enough to run the analysis notebooks. Raw FASTQs are deposited **separately** (see [`docs/data_availability.md`](docs/data_availability.md)); a local `data/raw_data/` tree may exist for curation but is not part of the main bundle. Details: [`data/README.md`](data/README.md), [`figs/README.md`](figs/README.md).
+After cloning, download the **processed** archive from the [KTH Data Repository](https://datarepository.kth.se/records/jg1wh-kza40) and unpack `data/single_nuclei/`, `data/spatial/`, `data/other/`, and `figs/` into the repo root. That is enough to run most analysis notebooks. Raw FASTQs are deposited **separately** (see [`docs/data_availability.md`](docs/data_availability.md)).
+
+**Before mouse brain analysis:** download **`l5_all.loom`** (~18 GB) from [mousebrain.org/adolescent](http://mousebrain.org/adolescent/) and place it at `data/other/external_references/mouse_brain_atlas/l5_all.loom` (not bundled in the KTH archive). See [`docs/data_availability.md`](docs/data_availability.md#mouse-brain-atlas--zeisel-et-al-2018).
+
+Details: [`data/README.md`](data/README.md), [`figs/README.md`](figs/README.md).
 
 **Deposit status:** All processed and raw data layers are complete and barcode-verified. Processed data (`single_nuclei/`, `spatial/`, `other/`, `figs/`) is in the main KTH archive; raw FASTQs and source microscopy (`raw_data/`) are in a separate linked deposit. See [`data/README.md`](data/README.md).
 

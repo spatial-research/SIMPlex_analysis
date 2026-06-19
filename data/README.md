@@ -103,7 +103,10 @@ data/
 │   └── xenium/breast_cancer/{patient4,patient5}/
 │
 └── other/                                 # OTHER_ROOT in config.R
-    ├── external_references/
+    ├── external_references/               # public atlases; see data_availability.md
+    │   └── mouse_brain_atlas/
+    │       ├── l5_all.loom                # NOT in KTH deposit — fetch from mousebrain.org/adolescent
+    │       └── allen_cortex.rds           # bundled (Allen cortex reference)
     ├── CTA/
     └── histpathology_visium/
 ```
@@ -123,7 +126,7 @@ Paths come from [`../config.R`](../config.R): `CELLRANGER`, `CELLBENDER`, `SN_RD
 | `spatial/r_objects/…/*.rds` | Visium Seurat + deconvolution maps | Breast / prostate analysis |
 | `spatial/xenium/…` | Xenium Analyzer output | `analysis_cellStateLevel.ipynb` |
 | `other/CTA/`, `other/histpathology_visium/` | Per-patient CSVs | `analysis_majorLevel.ipynb` |
-| `other/external_references/` | Public atlases | See [`../docs/data_availability.md`](../docs/data_availability.md) |
+| `other/external_references/` | Public atlases | See [`../docs/data_availability.md`](../docs/data_availability.md). **`l5_all.loom`** (Zeisel mouse brain, ~18 GB) is **not** in the KTH deposit — download from [mousebrain.org/adolescent](http://mousebrain.org/adolescent/) into `mouse_brain_atlas/`. |
 
 **Git-tracked metadata** in [`../resources/`](../resources/): `sample_metadata.csv`, `cellbender_summary.csv` (CellBender metrics for technical experiments), `pat4_celltalker_interactions.csv` (CellTalker output for patient 4 niche analysis).
 
