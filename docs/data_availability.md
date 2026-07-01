@@ -6,11 +6,11 @@ Mirrors the manuscript "Code and Data availability" section. Use alongside [`dat
 
 ## Deposited processed data
 
-**KTH Data Repository** — DOI: [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40)
+**KTH Data Repository** — [https://datarepository.kth.se/records/v2nqh-scr27](https://datarepository.kth.se/records/v2nqh-scr27)
 
-Contains: R objects (`.rds`), CTA and histopathology CSVs, Xenium outputs (patients 4, 5), SpaceRanger outputs, CellRanger / CellBender matrices, prostate and mouse brain processed data, and external reference files under `data/other/`.
+Contains: `single_nuclei.tar`, `spatial.tar`, `other.tar`, `figs.tar`, and `sample_metadata.csv` — R objects (`.rds`), CTA and histopathology CSVs, Xenium outputs (patients 4, 5), SpaceRanger outputs, CellRanger / CellBender matrices, prostate and mouse brain processed data, and external reference files under `data/other/`.
 
-After download, unpack into the repo:
+After download, extract the `.tar` archives into the repo root:
 
 - `data/single_nuclei/` — CellRanger, CellBender, snRNA RDS
 - `data/spatial/` — SpaceRanger, Xenium, Visium Seurat objects

@@ -4,7 +4,7 @@
 > Machado MT\*, He M\*, Alonso Galicia L\*, *et al.*
 > Corresponding author: Joakim Lundeberg (KTH Royal Institute of Technology / SciLifeLab)
 
-SIMPlex (**S**ingle-section **I**ntegrated **M**ulti-layer **P**rofiling) generates paired Visium spatial transcriptomics and Chromium snRNA-seq from the **same 5 µm FFPE section**. This repository holds the analysis code and small metadata files needed to reproduce the paper figures from the deposited data ([KTH DOI `10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40)).
+SIMPlex (**S**ingle-section **I**ntegrated **M**ulti-layer **P**rofiling) generates paired Visium spatial transcriptomics and Chromium snRNA-seq from the **same 5 µm FFPE section**. This repository holds the analysis code and small metadata files needed to reproduce the paper figures from the deposited data ([KTH Data Repository](https://datarepository.kth.se/records/v2nqh-scr27)).
 
 ---
 
@@ -150,7 +150,7 @@ HDF5_LIB  <- "/path/to/libhdf5_hl.so.200"   # or NULL to skip
 
 ### 4. Populate `data/` and `figs/`
 
-After cloning, download the **processed** archive from the [KTH Data Repository](https://datarepository.kth.se/records/jg1wh-kza40) and unpack `data/single_nuclei/`, `data/spatial/`, `data/other/`, and `figs/` into the repo root. That is enough to run most analysis notebooks. Raw FASTQs are deposited **separately** (see [`docs/data_availability.md`](docs/data_availability.md)).
+After cloning, download `single_nuclei.tar`, `spatial.tar`, `other.tar`, and `figs.tar` from the [KTH Data Repository](https://datarepository.kth.se/records/v2nqh-scr27), extract into the repo root, and place `sample_metadata.csv` in `data/`. That is enough to run most analysis notebooks. Raw FASTQs are deposited **separately** (see [`docs/data_availability.md`](docs/data_availability.md)).
 
 **Before mouse brain analysis:** download **`l5_all.loom`** (~18 GB) from [mousebrain.org/adolescent](http://mousebrain.org/adolescent/) and place it at `data/other/external_references/mouse_brain_atlas/l5_all.loom` (not bundled in the KTH archive). See [`docs/data_availability.md`](docs/data_availability.md#mouse-brain-atlas--zeisel-et-al-2018).
 
@@ -186,7 +186,7 @@ Every R notebook starts with `source(here::here("config.R"))`.
 
 ## Data and code availability
 
-- **Processed data** (matrices, SpaceRanger/Xenium outputs, R objects, annotations) — KTH DOI: [`10.71775/kth.jg1wh-kza40`](https://datarepository.kth.se/records/jg1wh-kza40)
+- **Processed data** (matrices, SpaceRanger/Xenium outputs, R objects, annotations) — [KTH Data Repository](https://datarepository.kth.se/records/v2nqh-scr27)
 - **Raw sequencing data** — separate public repository (linked from the KTH record; layout mirrors `data/raw_data/`; deposit complete)
 - **Public references** — see [`docs/data_availability.md`](docs/data_availability.md)
 
