@@ -1,6 +1,6 @@
 # Manuscript ↔ repository figure map
 
-Cross-reference between the publication figures and script outputs under `figs/`. Based on manuscript PDFs in the local working folder (`Figure 2.pdf`, `Extended Data Fig 1.pdf`) and the analysis scripts.
+Cross-reference between the publication figures and script outputs under `figs/`. Based on revision manuscript PDFs in `remove_before_submission/manuscript_review/figs/` and the analysis scripts.
 
 **Important:** Final manuscript panels were assembled and styled in Adobe Illustrator. Expect **thematic** correspondence (same analysis, similar layout), not pixel-identical matches to raw script PDFs/JPGs. Colours, panel order, cropping, and multi-panel composites often differ from `ggsave()` output.
 
@@ -36,7 +36,7 @@ Manuscript panels observed in `Figure 2.pdf`:
 
 ## Figure 3 — Patient 4 niches (main text)
 
-No `Figure 3.pdf` in the local manuscript folder; mapping follows script subtitles and figure legend structure:
+From `Figure 3.pdf` and script subtitles:
 
 | Panel | Expected content | Script | Closest script output |
 |-------|-----------------|--------|----------------------|
@@ -65,19 +65,27 @@ From `Extended Data Fig 1.pdf`:
 | **1f** | Fine-grained annotations + spatial maps | same | HTML knit output |
 | **1g** | Allen cortex layer labels + laminar deconvolution | same | HTML knit output |
 
-**Repo doc vs manuscript:** We list Fig. 1c–f as main-text mouse brain panels; the local EDF1 PDF combines QC (b–d) and annotation/deconvolution (e–g) in one extended figure. Main **Figure 1** PDF was not available for cross-check.
+**Repo doc vs manuscript:** We list Fig. 1c–f as main-text mouse brain panels; the local EDF1 PDF combines QC (b–d) and annotation/deconvolution (e–g) in one extended figure.
 
 ---
 
-## Extended Data figures — breast & prostate
+## Extended Data figures — breast & prostate (revision numbering)
 
 | EDF | Content | Script | `figs/` folder |
 |-----|---------|--------|----------------|
-| **2** | BC snRNA QC (FFPE + FF) | `qc_doubletRemoval.ipynb` | `breast_cancer/qc_doubletRemoval/` |
-| **3** | Prostate QC + integration | `qc_doubletRemoval.ipynb` + `integrative_prostate.ipynb` | `prostate_cancer/` |
-| **4a** | Per-sample BC nuclei annotation (example: patient 9) | `annotation_majorLevel.ipynb` | Optional in deposit — regenerate to `annotation/patient9_55um/` if needed |
-| **4b–6** | Integration QC, deconvolution benchmarks, HD | `analysis_majorLevel.ipynb` | `breast_cancer/analysis_majorLevel/` |
-| **7–9** | Subclustering, patient-4 niches, DEG/Xenium | `analysis_cellStateLevel.ipynb` | `breast_cancer/analysis_cellStateLevel/` |
+| **2** | BC snRNA QC (FFPE + FF; cross-cohort comparison) | `qc_doubletRemoval.ipynb` · `technical/metrics_comparison.ipynb` | `breast_cancer/qc_doubletRemoval/` · `technical/metrics_comparison/` |
+| **3** | Nuclei integrity across FFPE section thicknesses (FACS + confocal) | — | Experimental data (not in repo) |
+| **4** | Prostate Visium HD SIMPlex profiling | `qc_doubletRemoval.ipynb` + `integrative_prostate.ipynb` | `prostate_cancer/` |
+| **5** | Cross-patient BC integration, marker dot plot, major-lineage spatial maps | `analysis_majorLevel.ipynb` | `breast_cancer/analysis_majorLevel/` |
+| **6** | Histopathology / CTA vs deconvolution benchmarking | `analysis_majorLevel.ipynb` | `breast_cancer/analysis_majorLevel/` |
+| **7** | UCell marker modules vs deconvolution; Patient 5 Xenium + HD maps | `analysis_majorLevel.ipynb` | `breast_cancer/analysis_majorLevel/` |
+| **8** | Fine-grained state annotation; **8c** cluster stability (Jaccard subsampling) | `analysis_cellStateLevel.ipynb` · `extra_exploration.ipynb` | `analysis_cellStateLevel/` · `review/cluster_stability/` |
+| **9** | Cross-cohort fine-grained spatial colocalization; **9c** Spearman threshold sensitivity (ARI) | `analysis_cellStateLevel.ipynb` · `extra_exploration.ipynb` | `analysis_cellStateLevel/` · `review/correlation_threshold_sensitivity/` |
+| **10** | Patient 4 DEG volcanoes, ligand–receptor analysis, Xenium validation | `analysis_cellStateLevel.ipynb` | `breast_cancer/analysis_cellStateLevel/` |
+
+**Numbering change (revision):** A new Extended Data Fig. 3 (nuclei integrity) shifted former EDF 3–9 to EDF 4–10. Extended Data Fig. 8 panel **c** now shows subpopulation cluster stability (`figs/review/cluster_stability/subpopulation_jaccard_stability.pdf`; BC atlas stability in the same analysis). Extended Data Fig. 9 panel **c** adds co-localization threshold sensitivity (`figs/review/correlation_threshold_sensitivity/correlation_threshold_sensitivity.pdf`); downstream panels shift one letter.
+
+Per-sample nuclei annotation (`annotation_majorLevel.ipynb` → `figs/breast_cancer/annotation/`) remains available but is not assigned to a numbered extended data figure in the revision.
 
 ---
 
@@ -85,14 +93,16 @@ From `Extended Data Fig 1.pdf`:
 
 | Folder | Role | Status |
 |--------|------|--------|
-| `breast_cancer/analysis_majorLevel/` | Fig. 1g, Fig. 2, EDF 4–6 | Complete — in KTH bundle or regenerate from notebook |
-| `breast_cancer/analysis_cellStateLevel/` | Fig. 2i–k, Fig. 3, EDF 7–9 | Complete — in KTH bundle or regenerate from notebook |
+| `breast_cancer/analysis_majorLevel/` | Fig. 1g, Fig. 2a–h, EDF 5–7 | Complete — in KTH bundle or regenerate from notebook |
+| `breast_cancer/analysis_cellStateLevel/` | Fig. 2i–k, Fig. 3, EDF 8–10 | Complete — in KTH bundle or regenerate from notebook |
 | `breast_cancer/qc_doubletRemoval/` | EDF 2 | Complete |
-| `breast_cancer/annotation/` | EDF 4a | Optional — regenerate from notebook |
-| `prostate_cancer/` | EDF 3 | Complete |
+| `breast_cancer/annotation/` | Optional per-sample QC | Optional — regenerate from notebook |
+| `prostate_cancer/` | EDF 4 | Complete |
 | `mouse_brain/` | Fig. 1 / EDF 1 | From notebook run (mostly knitted HTML) |
 | `technical/` | Cross-cohort QC, technical experiments | From `metrics_comparison.ipynb` + `qc_doubletRemoval.ipynb` |
-| `review/` | Reviewer-response robustness checks | From `extra_exploration.ipynb` |
+| `review/cluster_stability/` | EDF 8c | From `extra_exploration.ipynb` |
+| `review/correlation_threshold_sensitivity/` | EDF 9c | From `extra_exploration.ipynb` |
+| `review/` (other) | Reviewer-response robustness checks | From `extra_exploration.ipynb` |
 | `spaGE/` | Visium HD imputation benchmark | From `spaGE.ipynb` |
 
 See also [`script_to_figure_map.md`](script_to_figure_map.md) for script-level panel descriptions.

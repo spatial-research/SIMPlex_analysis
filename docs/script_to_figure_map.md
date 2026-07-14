@@ -4,6 +4,8 @@ Mapping of analysis notebook outputs to manuscript figures. Run notebooks in the
 
 All script paths are relative to `scripts/jupyter/`.
 
+Revision figure PDFs: `remove_before_submission/manuscript_review/figs/`.
+
 ## Figure 1 — SIMPlex method validation across tissues
 
 | Panel | Content | Script | Notes |
@@ -54,24 +56,27 @@ All script paths are relative to `scripts/jupyter/`.
 | 1b | Mouse brain Visium + snRNA QC scatter | `mouse_brain/qc_metrics.ipynb` |
 | 1c | Mouse brain label transfer comparisons | `mouse_brain/spatial_analysis.ipynb` |
 | 1d–e | Layer-specific cortical / hippocampal annotation | `mouse_brain/spatial_analysis.ipynb` |
-| 2 | BC snRNA-seq QC (FFPE + FF) | `qc_doubletRemoval.ipynb` + `breast_cancer/annotation_majorLevel.ipynb` |
-| 3 | Prostate QC + integrative analysis | `qc_doubletRemoval.ipynb` + `prostate_cancer/integrative_prostate.ipynb` |
-| 4a | Per-sample BC nuclei annotation | `breast_cancer/annotation_majorLevel.ipynb` | Outputs to `figs/breast_cancer/annotation/patient9_55um/` — optional in deposit |
-| 4b–c | Same-patient consecutive section integration QC | `breast_cancer/analysis_majorLevel.ipynb` |
-| 4d | Spatial decon mismatch examples | `breast_cancer/analysis_majorLevel.ipynb` |
-| 5 | Extended deconvolution benchmarking | `breast_cancer/analysis_majorLevel.ipynb` |
-| 6 | High-resolution HD deconvolution benchmarks | `breast_cancer/analysis_majorLevel.ipynb` |
-| 7a–c | Cross-patient subclustering UMAPs | `breast_cancer/analysis_cellStateLevel.ipynb` |
-| 7d–f | Reference comparison heatmaps | `breast_cancer/analysis_cellStateLevel.ipynb` |
-| 8a–e | Patient 4 niche details + atlas comparison | `breast_cancer/analysis_cellStateLevel.ipynb` |
-| 9a–f | DEG signatures + Xenium confirmations | `breast_cancer/analysis_cellStateLevel.ipynb` |
+| 2 | BC snRNA-seq QC (FFPE + FF; cross-cohort) | `qc_doubletRemoval.ipynb` · `technical/metrics_comparison.ipynb` |
+| 3 | Nuclei integrity across section thicknesses (FACS + confocal) | — (experimental; not in repo) |
+| 4 | Prostate Visium HD SIMPlex profiling | `qc_doubletRemoval.ipynb` + `prostate_cancer/integrative_prostate.ipynb` |
+| 5 | Cross-patient BC integration; marker dot plot; major-lineage spatial maps | `breast_cancer/analysis_majorLevel.ipynb` |
+| 6 | Histopathology / CTA vs deconvolution benchmarking | `breast_cancer/analysis_majorLevel.ipynb` |
+| 7 | UCell marker modules vs deconvolution; Patient 5 Xenium + HD maps | `breast_cancer/analysis_majorLevel.ipynb` |
+| 8a–b | Patient / subtype distribution across fine-grained states | `breast_cancer/analysis_cellStateLevel.ipynb` |
+| 8c | Subpopulation cluster stability (Jaccard subsampling) | `breast_cancer/extra_exploration.ipynb` → `figs/review/cluster_stability/` |
+| 8d–f | Atlas correlation heatmaps (Wu 2021; Cords 2023) | `breast_cancer/analysis_cellStateLevel.ipynb` |
+| 9a–b | Cross-cohort fine-grained spatial colocalization (SIMPlex vs BC atlas) | `breast_cancer/analysis_cellStateLevel.ipynb` |
+| 9c | Spearman co-localization threshold sensitivity (ARI vs *r* = 0.15) | `breast_cancer/extra_exploration.ipynb` → `figs/review/correlation_threshold_sensitivity/` |
+| 9d–f | Patient 4 histopathology; mCAF maps; SIMPlex vs atlas comparison | `breast_cancer/analysis_cellStateLevel.ipynb` |
+| 10a–f | Patient 4 DEG volcanoes; ligand–receptor analysis; Xenium validation | `breast_cancer/analysis_cellStateLevel.ipynb` |
 
-## Supplementary analyses (not primary manuscript figures)
+## Additional analyses
 
 | Script | Outputs | Purpose |
 |--------|---------|---------|
-| `technical/metrics_comparison.ipynb` | `figs/technical/metrics_comparison/` | Cross-cohort snRNA QC (SIMPlex vs snPATHO vs 10x controls) |
-| `breast_cancer/extra_exploration.ipynb` | `figs/review/` | Reviewer-response robustness: LR sanity check, CAF/mast/neutrophil validation, correlation threshold sensitivity, cluster stability, snRNA vs scRNA deconvolution |
+| `breast_cancer/annotation_majorLevel.ipynb` | `figs/breast_cancer/annotation/` | Per-sample nuclei annotation (optional; not in numbered EDFs) |
+| `technical/metrics_comparison.ipynb` | `figs/technical/metrics_comparison/` | Cross-cohort snRNA QC (supports EDF 2) |
+| `breast_cancer/extra_exploration.ipynb` | `figs/review/` (other subfolders) | Reviewer-response robustness: LR sanity check, CAF/mast/neutrophil validation, snRNA vs scRNA deconvolution |
 | `breast_cancer/spaGE.ipynb` | `figs/spaGE/` | Visium HD SpaGE imputation across SIMPlex and BC atlas references |
 
 ## Intermediate file flow
@@ -95,6 +100,10 @@ analysis_cellStateLevel.ipynb
   → spatial/r_objects/breast_cancer/cross_patient/merged_visium_deconSubpopulations_simplex.rds
   → single_nuclei/r_objects/breast_cancer/cross_patient/caf_subpop_analysis.rds
   → resources/pat4_celltalker_interactions.csv
+
+extra_exploration.ipynb
+  → figs/review/cluster_stability/ (EDF 8c)
+  → figs/review/correlation_threshold_sensitivity/ (EDF 9c)
 ```
 
 Cross-patient files are part of the KTH deposit and can be used without re-running upstream steps. `extra_exploration.ipynb` and `spaGE.ipynb` start from deposited objects.
