@@ -1,0 +1,23 @@
+sample_id;cellbender_nuclei;final_nuclei;median_genes;median_counts;pools;collection_year;dv200_rin;spatial_assay;patient_id;tissue_area;subtype
+mouse;24567;11129;2747;5047;2;;;;A_B;;Mouse Brain
+patient10_55um;69435;48464;1025;1596;2;2012;8.1;Visium 3';patient10;1 x 1 cm;unknown
+patient10_ctrl1;6497;5917;950;1400;1;;;SIMPlex Ctrl FF;patient10;;unknown
+patient10_ctrl2;6571;5995;1646;2748;1;;;SIMPlex Ctrl FF;patient10;;unknown
+patient1_55um;19679;10495;636;788;1;2014;NA;Visium;patient1;2 x 2 cm;LuminalA
+patient2_55um;13018;8401;851;1212;1;2016;NA;Visium;patient2;2 x 2 cm;LuminalB(ER)
+patient4_55um;4165;3049;600;710;2;2015;52;Visium;patient4;2 x 2 cm;TNBC
+patient4_HD;10379;7751;789;1080;2;2015;52;Visium HD;patient4;2 x 2 cm;TNBC
+patient4_ctrl;17483;9135;168;185;1;;;SIMPlex Ctrl FFPE;patient4;;TNBC
+patient5_55um;9860;7678;798;950;2;2018;44;Visium;patient5;1 x 1 cm;TNBC
+patient5_HD;12362;6709;633;765;1;2018;44;Visium HD;patient5;1 x 1 cm;TNBC
+patient6_55um;9105;7229;1039;1466;2;2020;49;Visium;patient6;2 x 2 cm;TNBC
+patient6_ctrl_3x;25869;17718;171;207;1;;;SIMPlex Ctrl FFPE;patient6;;TNBC
+patient7_55um;8378;5653;493;547;1;2014;NA;Visium;patient7;2 x 2 cm;LuminalB(ER)
+patient8_55um;5834;4990;747;901;1;2021;NA;Visium;patient8;2 x 2 cm;LuminalA
+patient9_55um;11161;9463;1154;1462;1;2016;51;Visium;patient9;2 x 2 cm;LuminalB(ER)
+pt10_HD;6475;5659;625;726;1;2019;NA;Visium HD;pt10;1 x 1 cm;Prostate Cancer
+pt20_HD;9905;7734;377;439;1;2019;NA;Visium;pt20;1 x 1 cm;Prostate Cancer
+median_global;10142;7706;768;926;1;;;;;;
+median_BC;10379;7678;789;950;1;;;;;;
+median_mouse;24567;11129;2747;5047;2;;;;;;
+median_PC;8190;6696;501;582;1;;;;;;
