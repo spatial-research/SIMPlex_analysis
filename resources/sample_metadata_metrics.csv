@@ -1,8 +1,8 @@
 sample_id,cellbender_nuclei,final_nuclei,median_genes,median_counts,pools,collection_year,dv200_rin,spatial_assay,patient_id,tissue_area,subtype
-MB_2,14575,11129,2747,5047,1,NA,NA,Visium,MB_2,,Mouse Brain
+MB_2,14575,11129,2747,5047,1,NA,NA,Visium,MB_2,0.5 x 0.5 cm,Mouse Brain
 patient10_55um,69435,48464,1025,1596,2,2012,8.1,Visium,patient10,1 x 1 cm,unknown
-patient10_ctrl1,6497,5917,950,1400,1,2012,8.1,Visium,patient10,,unknown
-patient10_ctrl2,6571,5995,1646,2748,1,2012,8.1,Visium,patient10,,unknown
+patient10_ctrl1,6497,5917,950,1400,1,2012,8.1,Visium,patient10,1 x 1 cm,unknown
+patient10_ctrl2,6571,5995,1646,2748,1,2012,8.1,Visium,patient10,1 x 1 cm,unknown
 patient1_55um,19679,10495,636,788,1,2014,NA,Visium,patient1,2 x 2 cm,LuminalA
 patient2_55um,13018,8401,851,1212,1,2016,NA,Visium,patient2,2 x 2 cm,LuminalB(ER)
 patient4_55um,4165,3049,600,710,2,2015,52,Visium,patient4,2 x 2 cm,TNBC
