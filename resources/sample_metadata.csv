@@ -12,5 +12,4 @@ patient9_55um,patient9,LuminalB(ER),standard Visium
 patient10_55um,patient10,unknown,standard Visium Fresh-Frozen 18um section (not used in integrative analysis)
 pt10_HD,pt10,Prostate Cancer,Visium HD scrape
 pt20_HD,pt20,Prostate Cancer,Visium HD scrape
-A,A,Mouse Brain,standard Visium
-B,B,Mouse Brain,standard Visium
+MB_2,MB_2,Mouse Brain,standard Visium
