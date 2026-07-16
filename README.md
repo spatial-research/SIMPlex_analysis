@@ -90,7 +90,7 @@ See [`docs/script_to_figure_map.md`](docs/script_to_figure_map.md) for a per-pan
 | patient10_55um | patient10 | Visium 55 µm + snRNA | unknown | fresh-frozen specimen (std Visium); not in the FFPE integrative analysis |
 | pt10_HD | pt10 | Visium HD + snRNA | Prostate cancer | |
 | pt20_HD | pt20 | Visium HD + snRNA | Prostate cancer | |
-| MB_2 | MB_2 | Visium + snRNA | Mouse brain | snRNA from CellBender `sample_2`; two Visium sections (`A`, `B`) also profiled spatially |
+| MB_2 | MB_2 | Visium + snRNA | Mouse brain | snRNA from CellBender `sample_2`|
 
 Patients 4 and 5 are the deeply multimodal TNBC cases. Specimen metadata: [`resources/sample_metadata.csv`](resources/sample_metadata.csv). Per-sample clinical fields and snRNA QC metrics (CellBender nuclei, final nuclei, median genes/UMIs, preservation method): [`resources/sample_metadata_metrics.csv`](resources/sample_metadata_metrics.csv). Patient 3 has CTA and histopathology annotations in `data/other/` but is not in the integrative snRNA analysis.
 
