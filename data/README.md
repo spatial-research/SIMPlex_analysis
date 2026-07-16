@@ -12,7 +12,7 @@ Four **top-level** areas. **`raw_data/` is separate** from the processed trees (
 - **Processed data (figures / re-run from matrices):** [KTH Data Repository](https://datarepository.kth.se/records/v2nqh-scr27). Download `single_nuclei.tar`, `spatial.tar`, `other.tar`, and `figs.tar`, extract into the repo root, and place `sample_metadata.csv` in `data/`. Install the R environment first: [`../README.md`](../README.md#2-install-environment).
 - **Raw sequencing data:** deposited **separately** from the processed archive (same folder layout as `raw_data/` below; linked from the KTH record). Not required to run the analysis notebooks.
 - **Tracking:** directory structure and `.md` files are git-tracked; data files are gitignored. The KTH deposit is the canonical complete copy.
-- **IDs:** breast cancer `patient1`–`patient10`; prostate `pt10` / `pt20`; mouse brain `A` / `B`. No source institution IDs or dates in paths or filenames.
+- **IDs:** breast cancer `patient1`–`patient10`; prostate `pt10` / `pt20`; mouse brain spatial sections `A` / `B` (snRNA object `MB_2` from CellBender `sample_2`). No source institution IDs or dates in paths or filenames.
 - **`55um` = standard Visium** (55 µm spot pitch), not section thickness. Contrast with `HD` (Visium HD, 2 µm bins). Fresh-frozen breast (patient10) is standard Visium → under `55um/`.
 - **Multi-library samples:** two sequencing libraries → `patientN/patientN_1` and `patientN/patientN_2` under snRNA and (where applicable) spatial raw / SpaceRanger. Single-library samples use a flat `patientN/` (snRNA) or `patientN_55um/` (SpaceRanger).
 
@@ -36,10 +36,9 @@ Four **top-level** areas. **`raw_data/` is separate** from the processed trees (
 | patient10 | unknown | Visium 55 µm (2 FF sections) | yes | fresh-frozen; object `spatial_bc_FreshFixed_filtered.rds`; snRNA pool `SIMPlex_BC1`; not in FFPE integrative analysis |
 | pt10 | Prostate | Visium HD | yes | |
 | pt20 | Prostate | Visium HD | yes | |
-| A | Mouse brain | Visium | yes | |
-| B | Mouse brain | Visium | yes | |
+| A, B | Mouse brain | Visium (2 sections) | `MB_2` only | snRNA object (`mouse_brain/snRNA.rds`) from CellBender `sample_2`; section `A` is spatial-only |
 
-Subtype metadata: [`../resources/sample_metadata.csv`](../resources/sample_metadata.csv).
+Specimen metadata: [`../resources/sample_metadata.csv`](../resources/sample_metadata.csv). Clinical metadata and snRNA QC metrics per specimen (including technical controls and cohort summary rows): [`../resources/sample_metadata_metrics.csv`](../resources/sample_metadata_metrics.csv).
 
 ---
 
@@ -128,7 +127,16 @@ Paths come from [`../config.R`](../config.R): `CELLRANGER`, `CELLBENDER`, `SN_RD
 | `other/CTA/`, `other/histpathology_visium/` | Per-patient CSVs | `analysis_majorLevel.ipynb` |
 | `other/external_references/` | Public atlases | See [`../docs/data_availability.md`](../docs/data_availability.md). **`l5_all.loom`** (Zeisel mouse brain, ~18 GB) is **not** in the KTH deposit — download from [mousebrain.org/adolescent](http://mousebrain.org/adolescent/) into `mouse_brain_atlas/`. |
 
-**Git-tracked metadata** in [`../resources/`](../resources/): `sample_metadata.csv`, `cellbender_summary.csv` (CellBender metrics for technical experiments), `pat4_celltalker_interactions.csv` (CellTalker output for patient 4 niche analysis).
+**Git-tracked metadata** in [`../resources/`](../resources/):
+
+| File | Contents |
+|------|----------|
+| `sample_metadata.csv` | Specimen IDs, patient IDs, subtypes, assay notes |
+| `sample_metadata_metrics.csv` | Clinical metadata, preservation method (FF/FFPE), spatial assay, and snRNA QC metrics per specimen; includes SIMPlex Rev001 controls and cohort median summary rows |
+| `cellbender_summary.csv` | CellBender metrics for technical experiments |
+| `pat4_celltalker_interactions.csv` | CellTalker output for patient 4 niche analysis |
+
+Regenerate `sample_metadata_metrics.csv` with `python3 remove_before_submission/build_sample_metadata_metrics.py` (requires `simplex` env for QC extraction if `qc_sample_medians.csv` is missing).
 
 ---
 

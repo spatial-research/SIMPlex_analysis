@@ -10,6 +10,8 @@ Mirrors the manuscript "Code and Data availability" section. Use alongside [`dat
 
 Contains: `single_nuclei.tar`, `spatial.tar`, `other.tar`, `figs.tar`, and `sample_metadata.csv` — R objects (`.rds`), CTA and histopathology CSVs, Xenium outputs (patients 4, 5), SpaceRanger outputs, CellRanger / CellBender matrices, prostate and mouse brain processed data, and external reference files under `data/other/`.
 
+The git repository additionally tracks extended specimen metadata and snRNA QC metrics in [`resources/sample_metadata_metrics.csv`](../resources/sample_metadata_metrics.csv) (clinical fields, preservation method, CellBender/final nuclei counts, median genes/UMIs per nucleus).
+
 After download, extract the `.tar` archives into the repo root:
 
 - `data/single_nuclei/` — CellRanger, CellBender, snRNA RDS
@@ -31,7 +33,7 @@ Raw FASTQs and source microscopy are **not** bundled in the main KTH processed a
 | Breast cancer (patients 4, 5 HD section snRNA) | Chromium snRNA-seq FASTQs | `visHD_BC_rep1_*` and `visHD_BC_rep2_*` in `raw_data/single_nuclei/breast_cancer/` (multiplex library; flat, same layout as other pools) |
 | Breast cancer (patients 4, 5) | Xenium | Processed Analyzer output in main KTH deposit (`data/spatial/xenium/`) |
 | Prostate cancer (pt10, pt20) | Visium HD + snRNA-seq FASTQs | `raw_data/spatial/` and `raw_data/single_nuclei/prostate_cancer/` |
-| Mouse brain (A, B) | Visium + snRNA-seq FASTQs | `raw_data/spatial/mouse_brain/`, `raw_data/single_nuclei/mouse_brain/` |
+| Mouse brain (A, B Visium; snRNA `sample_2`) | Visium + snRNA-seq FASTQs | `raw_data/spatial/mouse_brain/`, `raw_data/single_nuclei/mouse_brain/` |
 
 ## Public reference datasets used
 

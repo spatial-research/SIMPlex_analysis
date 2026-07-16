@@ -101,6 +101,11 @@ analysis_cellStateLevel.ipynb
   → single_nuclei/r_objects/breast_cancer/cross_patient/caf_subpop_analysis.rds
   → resources/pat4_celltalker_interactions.csv
 
+technical/metrics_comparison.ipynb
+  → figs/technical/metrics_comparison/qc_cohort_comparison.pdf
+  → figs/technical/metrics_comparison/qc_cohort_summary.csv
+  → resources/sample_metadata_metrics.csv (specimen-level metrics table)
+
 extra_exploration.ipynb
   → figs/review/cluster_stability/ (EDF 8c)
   → figs/review/correlation_threshold_sensitivity/ (EDF 9c)
