@@ -1,17 +1,17 @@
 sample_id,patient_id,preservation_method,subtype,collection_year,tissue_area,spatial_assay,dv200_rin,pools,cellbender_nuclei,final_nuclei,median_genes,median_counts
 MB_2,MB_2,FF,Mouse Brain,NA,0.5 x 0.5 cm,Visium,NA,1,14575,11129,2747,5047
-patient10_55um,patient10,FF,unknown,2012,1 x 1 cm,Visium 3',8.1,2,69435,48464,1025,1596
-patient10_ctrl1,patient10,FF,unknown,2012,1 x 1 cm,SIMPlex Ctrl FF,8.1,1,6497,5917,950,1400
-patient10_ctrl2,patient10,FF,unknown,2012,1 x 1 cm,SIMPlex Ctrl FF,8.1,1,6571,5995,1646,2748
+patient10_55um,patient10,FF,unknown,2012,1 x 1 cm,Visium,8.1,2,69435,48464,1025,1596
+patient10_ctrl1,patient10,FF,unknown,2012,1 x 1 cm,NA,8.1,1,6497,5917,950,1400
+patient10_ctrl2,patient10,FF,unknown,2012,1 x 1 cm,NA,8.1,1,6571,5995,1646,2748
 patient1_55um,patient1,FFPE,LuminalA,2014,2 x 2 cm,Visium,NA,1,19679,10495,636,788
 patient2_55um,patient2,FFPE,LuminalB(ER),2016,2 x 2 cm,Visium,NA,1,13018,8401,851,1212
 patient4_55um,patient4,FFPE,TNBC,2015,2 x 2 cm,Visium,52,2,4165,3049,600,710
 patient4_HD,patient4,FFPE,TNBC,2015,2 x 2 cm,Visium HD,52,2,10379,7751,789,1080
-patient4_ctrl,patient4,FFPE,TNBC,2015,2 x 2 cm,SIMPlex Ctrl FFPE,52,1,17483,9135,168,185
+patient4_ctrl,patient4,FFPE,TNBC,2015,2 x 2 cm,NA,52,1,17483,9135,168,185
 patient5_55um,patient5,FFPE,TNBC,2018,1 x 1 cm,Visium,44,2,9860,7678,798,950
 patient5_HD,patient5,FFPE,TNBC,2018,1 x 1 cm,Visium HD,44,1,12362,6709,633,765
 patient6_55um,patient6,FFPE,TNBC,2020,2 x 2 cm,Visium,49,2,9105,7229,1039,1466
-patient6_ctrl_3x,patient6,FFPE,TNBC,2020,2 x 2 cm,SIMPlex Ctrl FFPE,49,1,25869,17718,171,207
+patient6_ctrl_3x,patient6,FFPE,TNBC,2020,2 x 2 cm,NA,49,1,25869,17718,171,207
 patient7_55um,patient7,FFPE,LuminalB(ER),2014,2 x 2 cm,Visium,NA,1,8378,5653,493,547
 patient8_55um,patient8,FFPE,LuminalA,2021,2 x 2 cm,Visium,NA,1,5834,4990,747,901
 patient9_55um,patient9,FFPE,LuminalB(ER),2016,2 x 2 cm,Visium,51,1,11161,9463,1154,1462
@@ -21,4 +21,4 @@ median_global,,,,,,,,1,10142,7706,768,926
 median_BC,,,,,,,,1,10379,7678,789,950
 median_mouse,,,,,,,,1,14575,11129,2747,5047
 median_PC,,,,,,,,1,8190,6696,501,582
-legend,"Clinical metadata and snRNA-seq QC metrics per analysed sample. Summary rows (median_*) report cohort medians of numeric columns; controls excluded. Controls (patient*_ctrl*) are SIMPlex Rev001 technical experiments, not in integrative BC analysis. patient3 excluded (low quality). Mouse snRNA metrics: MB_2 only. NA, not available.",Tissue preservation: FF (fresh-frozen) or FFPE (formalin-fixed paraffin-embedded).,Histological or molecular subtype annotation.,Year of tumour tissue collection.,Approximate area of the tissue section used for scraping.,"Spatial transcriptomics platform for the matched section (e.g. Visium, Visium HD).",RNA quality metric for parent tissue: DV200 (FFPE) or RIN (FF); NA if not available.,Number of snRNA-seq libraries merged for this specimen during QC.,Nuclei called by CellBender (v0.3) before QC; summed across pools where applicable.,Nuclei retained in the final post-QC Seurat object used for analysis.,Median genes detected per nucleus (nFeature_RNA) in the final object.,Median UMIs per nucleus (nCount_RNA) in the final object.
+legend,"Clinical metadata and snRNA-seq QC metrics per analysed sample. Summary rows (median_*) report cohort medians of numeric columns; controls excluded. Controls (patient*_ctrl*) are SIMPlex Rev001 technical experiments, not in integrative BC analysis. patient3 excluded (low quality). Mouse snRNA metrics: MB_2 only. NA, not available.",Tissue preservation: FF (fresh-frozen) or FFPE (formalin-fixed paraffin-embedded).,Molecular subtype annotation.,Year of tumour tissue collection.,Approximate area of the tissue section used for scraping.,"Spatial transcriptomics platform for the matched section (e.g. Visium, Visium HD).",RNA quality metric: DV200 (FFPE) or RIN (FF); NA if not available.,Number of snRNA-seq libraries merged for this specimen during QC.,Nuclei called by CellBender (v0.3) before QC; summed across pools where applicable.,Nuclei retained in the final post-QC Seurat object used for analysis.,Median genes detected per nucleus (nFeature_RNA) in the final object.,Median UMIs per nucleus (nCount_RNA) in the final object.
