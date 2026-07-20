@@ -6,7 +6,7 @@ Mirrors the manuscript "Code and Data availability" section. Use alongside [`dat
 
 ## Deposited processed data
 
-**KTH Data Repository** — [https://datarepository.kth.se/records/v2nqh-scr27](https://datarepository.kth.se/records/v2nqh-scr27)
+**KTH Data Repository** — [https://datarepository.kth.se/records/s70tj-52c84](https://datarepository.kth.se/records/s70tj-52c84) (DOI: [10.71775/kth.s70tj-52c84](https://doi.org/10.71775/kth.s70tj-52c84))
 
 Contains: `single_nuclei.tar`, `spatial.tar`, `other.tar`, `figs.tar`, and `sample_metadata.csv` — R objects (`.rds`), CTA and histopathology CSVs, Xenium outputs (patients 4, 5), SpaceRanger outputs, CellRanger / CellBender matrices, prostate and mouse brain processed data, and external reference files under `data/other/`.
 

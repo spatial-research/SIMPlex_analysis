@@ -4,7 +4,7 @@ Script outputs from the SIMPlex pipeline. Figure files (PDF, PNG, HTML, …) are
 
 ## Get the figures
 
-**KTH Data Repository:** [https://datarepository.kth.se/records/v2nqh-scr27](https://datarepository.kth.se/records/v2nqh-scr27)
+**KTH Data Repository:** [https://datarepository.kth.se/records/s70tj-52c84](https://datarepository.kth.se/records/s70tj-52c84) (DOI: [10.71775/kth.s70tj-52c84](https://doi.org/10.71775/kth.s70tj-52c84))
 
 Download `figs.tar` from the record and extract on top of this folder, or regenerate by running notebooks ([pipeline order](../README.md#5-run-the-pipeline)).
 

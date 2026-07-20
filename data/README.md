@@ -9,7 +9,7 @@ Four **top-level** areas. **`raw_data/` is separate** from the processed trees (
 | `spatial/` | Processed spatial: SpaceRanger, Xenium, Visium Seurat objects | Main processed deposit |
 | `other/` | CTA, histopathology, public reference atlases | Main processed deposit |
 
-- **Processed data (figures / re-run from matrices):** [KTH Data Repository](https://datarepository.kth.se/records/v2nqh-scr27). Download `single_nuclei.tar`, `spatial.tar`, `other.tar`, and `figs.tar`, extract into the repo root, and place `sample_metadata.csv` in `data/`. Install the R environment first: [`../README.md`](../README.md#2-install-environment).
+- **Processed data (figures / re-run from matrices):** [KTH Data Repository](https://datarepository.kth.se/records/s70tj-52c84) (DOI: [10.71775/kth.s70tj-52c84](https://doi.org/10.71775/kth.s70tj-52c84)). Download `single_nuclei.tar`, `spatial.tar`, `other.tar`, and `figs.tar`, extract into the repo root, and place `sample_metadata.csv` in `data/`. Install the R environment first: [`../README.md`](../README.md#2-install-environment).
 - **Raw sequencing data:** deposited **separately** from the processed archive (same folder layout as `raw_data/` below; linked from the KTH record). Not required to run the analysis notebooks.
 - **Tracking:** directory structure and `.md` files are git-tracked; data files are gitignored. The KTH deposit is the canonical complete copy.
 - **IDs:** breast cancer `patient1`–`patient10`; prostate `pt10` / `pt20`; mouse brain spatial sections `A` / `B` (snRNA object `MB_2` from CellBender `sample_2`). No source institution IDs or dates in paths or filenames.
