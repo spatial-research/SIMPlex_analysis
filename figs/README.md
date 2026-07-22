@@ -25,9 +25,10 @@ figs/
 ├── technical/
 │   ├── qc_doubletRemoval/           ← qc_doubletRemoval.ipynb (technical experiments)
 │   └── metrics_comparison/          ← technical/metrics_comparison.ipynb
-├── review/                          ← breast_cancer/extra_exploration.ipynb
+├── review/                          ← breast_cancer/extra_exploration.ipynb (+ reviewer-response figures)
 │   ├── LR_sanity_check/
 │   ├── CAF_validation/
+│   ├── caf_vs_histopath/            ← Reviewer Figure C1 (CTA/histopath vs SIMPlex/BC atlas)
 │   ├── correlation_threshold_sensitivity/
 │   ├── cluster_stability/
 │   └── sn_vs_sc_deconv/
