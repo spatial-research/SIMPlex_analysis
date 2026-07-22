@@ -25,7 +25,7 @@ Revision figure PDFs: `remove_before_submission/manuscript_review/figs/`.
 | 2a | Bulk population composition (histopathology vs single-cell vs deconvolution) | `breast_cancer/analysis_majorLevel.ipynb` |
 | 2b | Spatial deconvolution proportions, major cell types | `breast_cancer/analysis_majorLevel.ipynb` |
 | 2c | Cell-type proportions within histopathology compartments | `breast_cancer/analysis_majorLevel.ipynb` |
-| 2d | Spatial CTA assignments (cell counts per compartment) | `breast_cancer/analysis_majorLevel.ipynb` (consumes `data/other/CTA/`) |
+| 2d | Spatial CTA assignments (cell counts per compartment) + whole-tissue compartment composition strip (CTA vs SIMPlex vs BC atlas → `autoAnnotation/compartment_composition_CTA_vs_snRNA.pdf`) | `breast_cancer/analysis_majorLevel.ipynb` (consumes `data/other/CTA/`) |
 | 2e | Deconvolution vs UCell signature scoring | `breast_cancer/analysis_majorLevel.ipynb` |
 | 2f | T cell + endothelial correlation comparisons | `breast_cancer/analysis_majorLevel.ipynb` |
 | 2g | Visium HD 16 µm bin deconvolution vs consecutive Xenium | `breast_cancer/analysis_majorLevel.ipynb` |
