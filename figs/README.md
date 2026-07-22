@@ -4,7 +4,7 @@ Script outputs from the SIMPlex pipeline. Figure files (PDF, PNG, HTML, …) are
 
 ## Get the figures
 
-**KTH Data Repository:** [https://datarepository.kth.se/records/s70tj-52c84](https://datarepository.kth.se/records/s70tj-52c84) (DOI: [10.71775/kth.s70tj-52c84](https://doi.org/10.71775/kth.s70tj-52c84))
+**Zenodo:** [DOI 10.5281/zenodo.21497736](https://doi.org/10.5281/zenodo.21497736)
 
 Download `figs.tar` from the record and extract on top of this folder, or regenerate by running notebooks ([pipeline order](../README.md#5-run-the-pipeline)).
 
@@ -35,7 +35,7 @@ figs/
 └── spaGE/                           ← breast_cancer/spaGE.ipynb
 ```
 
-`annotation_majorLevel.ipynb` writes under `breast_cancer/annotation/<sample>/` (e.g. `patient9_55um/`). That tree is optional in the KTH deposit; regenerate locally if needed (not panelized in current extended data figures).
+`annotation_majorLevel.ipynb` writes under `breast_cancer/annotation/<sample>/` (e.g. `patient9_55um/`). That tree is optional in the Zenodo deposit; regenerate locally if needed (not panelized in current extended data figures).
 
 ## Manuscript mapping
 
@@ -70,11 +70,11 @@ Panel-level crosswalk: [`docs/manuscript_figure_map.md`](../docs/manuscript_figu
 
 | Folder | Status |
 |--------|--------|
-| `breast_cancer/analysis_majorLevel/` | In KTH bundle / regenerate from notebook |
-| `breast_cancer/analysis_cellStateLevel/` | In KTH bundle / regenerate from notebook |
-| `breast_cancer/qc_doubletRemoval/` | In KTH bundle / regenerate from notebook |
+| `breast_cancer/analysis_majorLevel/` | In Zenodo deposit / regenerate from notebook |
+| `breast_cancer/analysis_cellStateLevel/` | In Zenodo deposit / regenerate from notebook |
+| `breast_cancer/qc_doubletRemoval/` | In Zenodo deposit / regenerate from notebook |
 | `breast_cancer/annotation/` | Optional — regenerate if needed |
-| `prostate_cancer/` | In KTH bundle or from notebook run |
+| `prostate_cancer/` | In Zenodo deposit or from notebook run |
 | `mouse_brain/` | From notebook run (mostly knitted HTML) |
 | `technical/` | From notebook run |
 | `review/` | From notebook run (reviewer-response analyses) |

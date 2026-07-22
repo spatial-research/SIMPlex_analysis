@@ -4,7 +4,7 @@
 > Machado MT\*, He M\*, Alonso Galicia L\*, *et al.*
 > Corresponding author: Joakim Lundeberg (KTH Royal Institute of Technology / SciLifeLab)
 
-SIMPlex (**S**ingle-section **I**ntegrated **M**ulti-layer **P**rofiling) generates paired Visium spatial transcriptomics and Chromium snRNA-seq from the **same 5 µm FFPE section**. This repository holds the analysis code and small metadata files needed to reproduce the paper figures from the deposited data ([KTH Data Repository](https://datarepository.kth.se/records/s70tj-52c84); DOI: [10.71775/kth.s70tj-52c84](https://doi.org/10.71775/kth.s70tj-52c84)).
+SIMPlex (**S**ingle-section **I**ntegrated **M**ulti-layer **P**rofiling) generates paired Visium spatial transcriptomics and Chromium snRNA-seq from the **same 5 µm FFPE section**. This repository holds the analysis code and small metadata files needed to reproduce the paper figures from the deposited data ([Zenodo DOI 10.5281/zenodo.21497736](https://doi.org/10.5281/zenodo.21497736)).
 
 ---
 
@@ -12,10 +12,10 @@ SIMPlex (**S**ingle-section **I**ntegrated **M**ulti-layer **P**rofiling) genera
 
 1. **Clone** this repository.
 2. **Install** the analysis environment: `bash environment/setup.sh` (see [Setup](#setup)).
-3. **Download** the KTH archive and unpack `data/` and `figs/` on top of the repo root (see [`data/README.md`](data/README.md) and [`figs/README.md`](figs/README.md)).
+3. **Download** the Zenodo archive and unpack `data/` and `figs/` on top of the repo root (see [`data/README.md`](data/README.md) and [`figs/README.md`](figs/README.md)).
 4. **Run** notebooks cell-by-cell in Jupyter (kernel **R (simplex renv)**) or VS Code with the R extension.
 
-> **Note:** The git checkout tracks directory structure and README files only. Heavy data and figure files are gitignored. The KTH deposit is the canonical source for a complete copy.
+> **Note:** The git checkout tracks directory structure and README files only. Heavy data and figure files are gitignored. The Zenodo deposit is the canonical source for a complete copy.
 
 ---
 
@@ -152,13 +152,13 @@ HDF5_LIB  <- "/path/to/libhdf5_hl.so.200"   # or NULL to skip
 
 ### 4. Populate `data/` and `figs/`
 
-After cloning, download `single_nuclei.tar`, `spatial.tar`, `other.tar`, and `figs.tar` from the [KTH Data Repository](https://datarepository.kth.se/records/s70tj-52c84) (DOI: [10.71775/kth.s70tj-52c84](https://doi.org/10.71775/kth.s70tj-52c84)), extract into the repo root, and place `sample_metadata.csv` in `data/`. That is enough to run most analysis notebooks. Raw FASTQs are deposited **separately** (see [`docs/data_availability.md`](docs/data_availability.md)).
+After cloning, download `single_nuclei.tar`, `spatial.tar`, `other.tar`, and `figs.tar` from [Zenodo](https://doi.org/10.5281/zenodo.21497736) (DOI [10.5281/zenodo.21497736](https://doi.org/10.5281/zenodo.21497736)), extract into the repo root, and place `sample_metadata.csv` in `data/`. That is enough to run most analysis notebooks. Raw FASTQs are deposited **separately** (see [`docs/data_availability.md`](docs/data_availability.md)).
 
-**Before mouse brain analysis:** download **`l5_all.loom`** (~18 GB) from [mousebrain.org/adolescent](http://mousebrain.org/adolescent/) and place it at `data/other/external_references/mouse_brain_atlas/l5_all.loom` (not bundled in the KTH archive). See [`docs/data_availability.md`](docs/data_availability.md#mouse-brain-atlas--zeisel-et-al-2018).
+**Before mouse brain analysis:** download **`l5_all.loom`** (~18 GB) from [mousebrain.org/adolescent](http://mousebrain.org/adolescent/) and place it at `data/other/external_references/mouse_brain_atlas/l5_all.loom` (not bundled in the Zenodo archive). See [`docs/data_availability.md`](docs/data_availability.md#mouse-brain-atlas--zeisel-et-al-2018).
 
 Details: [`data/README.md`](data/README.md), [`figs/README.md`](figs/README.md).
 
-**Deposit status:** All processed and raw data layers are complete and barcode-verified. Processed data (`single_nuclei/`, `spatial/`, `other/`, `figs/`) is in the main KTH archive; raw FASTQs and source microscopy (`raw_data/`) are in a separate linked deposit. See [`data/README.md`](data/README.md).
+**Deposit status:** All processed and raw data layers are complete and barcode-verified. Processed data (`single_nuclei/`, `spatial/`, `other/`, `figs/`) is in the Zenodo archive; raw FASTQs and source microscopy (`raw_data/`) are in a separate linked deposit. See [`data/README.md`](data/README.md).
 
 ### 5. Run the pipeline
 
@@ -188,8 +188,8 @@ Every R notebook starts with `source(here::here("config.R"))`.
 
 ## Data and code availability
 
-- **Processed data** (matrices, SpaceRanger/Xenium outputs, R objects, annotations) — [KTH Data Repository](https://datarepository.kth.se/records/s70tj-52c84) (DOI: [10.71775/kth.s70tj-52c84](https://doi.org/10.71775/kth.s70tj-52c84))
-- **Raw sequencing data** — separate public repository (linked from the KTH record; layout mirrors `data/raw_data/`; deposit complete)
+- **Processed data** (matrices, SpaceRanger/Xenium outputs, R objects, annotations) — [Zenodo](https://doi.org/10.5281/zenodo.21497736) (DOI [10.5281/zenodo.21497736](https://doi.org/10.5281/zenodo.21497736))
+- **Raw sequencing data** — separate public repository (linked from the Zenodo record; layout mirrors `data/raw_data/`; deposit complete)
 - **Public references** — see [`docs/data_availability.md`](docs/data_availability.md)
 
 For questions about reproducing specific figures, see `docs/script_to_figure_map.md`, [`docs/manuscript_figure_map.md`](docs/manuscript_figure_map.md), and section headers in each notebook.

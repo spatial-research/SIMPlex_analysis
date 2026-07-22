@@ -6,7 +6,7 @@ Mirrors the manuscript "Code and Data availability" section. Use alongside [`dat
 
 ## Deposited processed data
 
-**KTH Data Repository** — [https://datarepository.kth.se/records/s70tj-52c84](https://datarepository.kth.se/records/s70tj-52c84) (DOI: [10.71775/kth.s70tj-52c84](https://doi.org/10.71775/kth.s70tj-52c84))
+**Zenodo** — [DOI 10.5281/zenodo.21497736](https://doi.org/10.5281/zenodo.21497736)
 
 Contains: `single_nuclei.tar`, `spatial.tar`, `other.tar`, `figs.tar`, and `sample_metadata.csv` — R objects (`.rds`), CTA and histopathology CSVs, Xenium outputs (patients 4, 5), SpaceRanger outputs, CellRanger / CellBender matrices, prostate and mouse brain processed data, and external reference files under `data/other/`.
 
@@ -22,7 +22,7 @@ Processed layers are present and barcode-verified. The analysis notebooks do **n
 
 ## Raw sequencing data (separate deposit)
 
-Raw FASTQs and source microscopy are **not** bundled in the main KTH processed archive. They are deposited in a **separate** public repository (linked from the KTH record), using the same directory layout as `data/raw_data/` in this project (documented in [`data/README.md`](../data/README.md)).
+Raw FASTQs and source microscopy are **not** bundled in the main Zenodo processed archive. They are deposited in a **separate** public repository (linked from the Zenodo record), using the same directory layout as `data/raw_data/` in this project (documented in [`data/README.md`](../data/README.md)).
 
 | Cohort | Modality | Notes |
 |--------|----------|--------|
@@ -31,7 +31,7 @@ Raw FASTQs and source microscopy are **not** bundled in the main KTH processed a
 | Breast cancer (patient10) | H&E + CytAssist source TIFFs | `raw_data/spatial/breast_cancer/55um/patient10/patient10_{1,2}/images/` |
 | Breast cancer (patients 1–10) | Chromium snRNA-seq FASTQs (55 µm) | Pool-level files under `raw_data/single_nuclei/breast_cancer/*.fastq.gz` |
 | Breast cancer (patients 4, 5 HD section snRNA) | Chromium snRNA-seq FASTQs | `visHD_BC_rep1_*` and `visHD_BC_rep2_*` in `raw_data/single_nuclei/breast_cancer/` (multiplex library; flat, same layout as other pools) |
-| Breast cancer (patients 4, 5) | Xenium | Processed Analyzer output in main KTH deposit (`data/spatial/xenium/`) |
+| Breast cancer (patients 4, 5) | Xenium | Processed Analyzer output in main Zenodo deposit (`data/spatial/xenium/`) |
 | Prostate cancer (pt10, pt20) | Visium HD + snRNA-seq FASTQs | `raw_data/spatial/` and `raw_data/single_nuclei/prostate_cancer/` |
 | Mouse brain (A, B Visium; snRNA `sample_2`) | Visium + snRNA-seq FASTQs | `raw_data/spatial/mouse_brain/`, `raw_data/single_nuclei/mouse_brain/` |
 
@@ -66,7 +66,7 @@ Raw FASTQs and source microscopy are **not** bundled in the main KTH processed a
 > Zeisel A *et al.* adolescent mouse brain scRNA-seq (Linnarsson lab).
 
 - **Download:** [mousebrain.org/adolescent](http://mousebrain.org/adolescent/) (GEO [SRP135960](https://www.ncbi.nlm.nih.gov/sra/?term=SRP135960)) — file **`l5_all.loom`** (~18 GB)
-- **Not in the KTH deposit** — fetch manually and place at:
+- **Not in the Zenodo deposit** — fetch manually and place at:
   `data/other/external_references/mouse_brain_atlas/l5_all.loom`
 - **`l5_all.agg.loom` is not used** by this repo (aggregated cluster-level file; optional).
 - Used by: `mouse_brain/sn_analysis.ipynb` (Zeisel label transfer via `loom::connect` → Seurat)

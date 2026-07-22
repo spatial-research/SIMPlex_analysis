@@ -9,9 +9,9 @@ Four **top-level** areas. **`raw_data/` is separate** from the processed trees (
 | `spatial/` | Processed spatial: SpaceRanger, Xenium, Visium Seurat objects | Main processed deposit |
 | `other/` | CTA, histopathology, public reference atlases | Main processed deposit |
 
-- **Processed data (figures / re-run from matrices):** [KTH Data Repository](https://datarepository.kth.se/records/s70tj-52c84) (DOI: [10.71775/kth.s70tj-52c84](https://doi.org/10.71775/kth.s70tj-52c84)). Download `single_nuclei.tar`, `spatial.tar`, `other.tar`, and `figs.tar`, extract into the repo root, and place `sample_metadata.csv` in `data/`. Install the R environment first: [`../README.md`](../README.md#2-install-environment).
-- **Raw sequencing data:** deposited **separately** from the processed archive (same folder layout as `raw_data/` below; linked from the KTH record). Not required to run the analysis notebooks.
-- **Tracking:** directory structure and `.md` files are git-tracked; data files are gitignored. The KTH deposit is the canonical complete copy.
+- **Processed data (figures / re-run from matrices):** [Zenodo](https://doi.org/10.5281/zenodo.21497736) (DOI [10.5281/zenodo.21497736](https://doi.org/10.5281/zenodo.21497736)). Download `single_nuclei.tar`, `spatial.tar`, `other.tar`, and `figs.tar`, extract into the repo root, and place `sample_metadata.csv` in `data/`. Install the R environment first: [`../README.md`](../README.md#2-install-environment).
+- **Raw sequencing data:** deposited **separately** from the processed archive (same folder layout as `raw_data/` below; linked from the Zenodo record). Not required to run the analysis notebooks.
+- **Tracking:** directory structure and `.md` files are git-tracked; data files are gitignored. The Zenodo deposit is the canonical complete copy.
 - **IDs:** breast cancer `patient1`–`patient10`; prostate `pt10` / `pt20`; mouse brain spatial sections `A` / `B` (snRNA object `MB_2` from CellBender `sample_2`). No source institution IDs or dates in paths or filenames.
 - **`55um` = standard Visium** (55 µm spot pitch), not section thickness. Contrast with `HD` (Visium HD, 2 µm bins). Fresh-frozen breast (patient10) is standard Visium → under `55um/`.
 - **Multi-library samples:** two sequencing libraries → `patientN/patientN_1` and `patientN/patientN_2` under snRNA and (where applicable) spatial raw / SpaceRanger. Single-library samples use a flat `patientN/` (snRNA) or `patientN_55um/` (SpaceRanger).
@@ -104,7 +104,7 @@ data/
 └── other/                                 # OTHER_ROOT in config.R
     ├── external_references/               # public atlases; see data_availability.md
     │   └── mouse_brain_atlas/
-    │       ├── l5_all.loom                # NOT in KTH deposit — fetch from mousebrain.org/adolescent
+    │       ├── l5_all.loom                # NOT in Zenodo deposit — fetch from mousebrain.org/adolescent
     │       └── allen_cortex.rds           # bundled (Allen cortex reference)
     ├── CTA/
     └── histpathology_visium/
@@ -125,7 +125,7 @@ Paths come from [`../config.R`](../config.R): `CELLRANGER`, `CELLBENDER`, `SN_RD
 | `spatial/r_objects/…/*.rds` | Visium Seurat + deconvolution maps | Breast / prostate analysis |
 | `spatial/xenium/…` | Xenium Analyzer output | `analysis_cellStateLevel.ipynb` |
 | `other/CTA/`, `other/histpathology_visium/` | Per-patient CSVs | `analysis_majorLevel.ipynb` |
-| `other/external_references/` | Public atlases | See [`../docs/data_availability.md`](../docs/data_availability.md). **`l5_all.loom`** (Zeisel mouse brain, ~18 GB) is **not** in the KTH deposit — download from [mousebrain.org/adolescent](http://mousebrain.org/adolescent/) into `mouse_brain_atlas/`. |
+| `other/external_references/` | Public atlases | See [`../docs/data_availability.md`](../docs/data_availability.md). **`l5_all.loom`** (Zeisel mouse brain, ~18 GB) is **not** in the Zenodo deposit — download from [mousebrain.org/adolescent](http://mousebrain.org/adolescent/) into `mouse_brain_atlas/`. |
 
 **Git-tracked metadata** in [`../resources/`](../resources/):
 
@@ -177,9 +177,9 @@ Prostate: `prostate_AP5_P2` → `pt10`, `pt20`. Barcode provenance: `remove_befo
 | Item | Status |
 |------|--------|
 | Processed snRNA + spatial (CellRanger, CellBender, SpaceRanger, objects, Xenium) | Complete; barcode-verified vs manuscript `.rds` |
-| Main KTH deposit (`single_nuclei/`, `spatial/`, `other/`, `figs/`) | Complete |
+| Main Zenodo deposit (`single_nuclei/`, `spatial/`, `other/`, `figs/`) | Complete |
 | Analysis notebooks | All manuscript and supplementary notebooks finalized |
-| Raw sequencing (`raw_data/`) | Complete — separate public deposit (linked from KTH record) |
+| Raw sequencing (`raw_data/`) | Complete — separate public deposit (linked from Zenodo record) |
 | Raw snRNA HD breast (`visHD_BC_rep*`) | Complete (flat in `breast_cancer/`; multiplex patient4 + patient5) |
 | Raw spatial HD breast (`raw_data/spatial/breast_cancer/HD/`) | Complete (Visium HD spatial FASTQs for patients 4 and 5) |
 | patient10 H&E / CytAssist source TIFFs | Complete (`raw_data/spatial/breast_cancer/55um/patient10/patient10_{1,2}/images/`) |

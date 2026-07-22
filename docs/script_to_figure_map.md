@@ -111,7 +111,7 @@ extra_exploration.ipynb
   → figs/review/correlation_threshold_sensitivity/ (EDF 9c)
 ```
 
-Cross-patient files are part of the KTH deposit and can be used without re-running upstream steps. `extra_exploration.ipynb` and `spaGE.ipynb` start from deposited objects.
+Cross-patient files are part of the Zenodo deposit and can be used without re-running upstream steps. `extra_exploration.ipynb` and `spaGE.ipynb` start from deposited objects.
 
 ## Manuscript crosswalk
 

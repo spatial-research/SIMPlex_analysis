@@ -94,8 +94,8 @@ Per-sample nuclei annotation (`annotation_majorLevel.ipynb` → `figs/breast_can
 
 | Folder | Role | Status |
 |--------|------|--------|
-| `breast_cancer/analysis_majorLevel/` | Fig. 1g, Fig. 2a–h, EDF 5–7 | Complete — in KTH bundle or regenerate from notebook |
-| `breast_cancer/analysis_cellStateLevel/` | Fig. 2i–k, Fig. 3, EDF 8–10 | Complete — in KTH bundle or regenerate from notebook |
+| `breast_cancer/analysis_majorLevel/` | Fig. 1g, Fig. 2a–h, EDF 5–7 | Complete — in Zenodo deposit or regenerate from notebook |
+| `breast_cancer/analysis_cellStateLevel/` | Fig. 2i–k, Fig. 3, EDF 8–10 | Complete — in Zenodo deposit or regenerate from notebook |
 | `breast_cancer/qc_doubletRemoval/` | EDF 2 | Complete |
 | `breast_cancer/annotation/` | Optional per-sample QC | Optional — regenerate from notebook |
 | `prostate_cancer/` | EDF 4 | Complete |
