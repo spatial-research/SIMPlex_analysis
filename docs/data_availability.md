@@ -86,6 +86,11 @@ Raw FASTQs and source microscopy are **not** bundled in the main Zenodo processe
 - Location: `data/other/external_references/10x_BC_FFPE/320k_scFFPE_16-plex_GEM-X_FLEX_BreastCancer1_BC7-8_count_sample_filtered_feature_bc_matrix.h5`
 - Used by: `breast_cancer/analysis_majorLevel.ipynb`
 
+### 10x Genomics probe sets (Visium + Chromium Flex)
+- Download: `https://cf.10xgenomics.com/supp/{spatial-exp,cell-exp}/probeset/` — Visium Human v1.0/v2.0, Visium Mouse v1.0/v2.0, Chromium Human v1.0.1/v1.1.0, Chromium Mouse v1.0.1 (fetched automatically if missing)
+- Location: `data/other/external_references/probe_sets/`
+- Used by: `technical/probe_overlap.ipynb`
+
 ### PCa scRNA-seq atlas (Erickson lab, Oct 2023)
 - Location: `data/other/external_references/PCa_atlas/PCa_atlas_annotated_Oct23_update.rds`
 - Used by: `prostate_cancer/integrative_prostate.ipynb`
